@@ -41,12 +41,22 @@ export function uniqueName(name, used) {
   return candidate;
 }
 export function download(blob, name) {
-  const url = URL.createObjectURL(blob),
-    a = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.style.display = "none";
   a.href = url;
   a.download = name;
+  a.rel = "noopener";
+  document.body.appendChild(a);
   a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  setTimeout(() => {
+    try {
+      if (a.parentNode) a.parentNode.removeChild(a);
+    } catch {
+      // ignore
+    }
+    URL.revokeObjectURL(url);
+  }, 10000);
 }
 export async function zipResults(results) {
   const { default: JSZip } = await import("jszip");

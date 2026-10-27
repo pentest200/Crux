@@ -9,6 +9,10 @@
     "test": "node --test src/lib/*.test.js"
   },
   "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
+    "@imgly/background-removal": "^1.7.0",
     "@vitejs/plugin-react": "^4.4.1",
     "docx": "^9.5.1",
     "dompurify": "^3.2.6",

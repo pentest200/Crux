@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { acceptedTypes, imageTools } from "../lib/catalog.js";
+import { acceptedTypes, imageTools, videoTools } from "../lib/catalog.js";
 import {
   MAX_BYTES,
   formatBytes,
@@ -51,6 +51,21 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
     [errors, setErrors] = useState([]),
     [busy, setBusy] = useState(false);
 
+  // ── background remover state ──
+  const [bgRemovedBlob, setBgRemovedBlob] = useState(null);
+  const [bgPreviewUrl, setBgPreviewUrl] = useState(null);
+  const [bgMode, setBgMode] = useState("transparent"); // transparent | color | image
+  const [bgColor, setBgColor] = useState("#ffffff");
+  const [bgImage, setBgImage] = useState(null);
+  const [bgProgress, setBgProgress] = useState(0);
+  const [bgProcessed, setBgProcessed] = useState(false);
+  const isBgTool = tool.id === "bg-remove";
+  const isVideoTool = videoTools.has(tool.id);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
+  const [audioFormat, setAudioFormat] = useState("mp3");
+  const [audioBitrate, setAudioBitrate] = useState("192k");
+  const [videoProgress, setVideoProgress] = useState(0);
+
   const handleDownload = (downloadAction) => {
     if (!user) {
       if (onRequireAuth) {
@@ -78,7 +93,8 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
     mounted = useRef(true);
   const server = tool.mode === "server",
     isImage = imageTools.has(tool.id),
-    imageInput = isImage || tool.id === "jpg-to-pdf";
+    imageInput = isImage || tool.id === "jpg-to-pdf",
+    videoInput = isVideoTool;
   const set = (key, value) => setOptions((old) => ({ ...old, [key]: value }));
   useEffect(() => {
     mounted.current = true;
@@ -102,6 +118,16 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
     setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [files, imageInput]);
+  // Video preview URL
+  useEffect(() => {
+    if (!files[0] || !videoInput) {
+      setVideoPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(files[0]);
+    setVideoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [files, videoInput]);
   useEffect(() => {
     let stopped = false;
     setPageCount(0);
@@ -183,6 +209,16 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
         continue;
       }
       if (
+        videoInput &&
+        !file.type.startsWith("video/") &&
+        !["mp4", "webm", "mov", "mkv", "avi"].some((ext) =>
+          file.name.toLowerCase().endsWith(`.${ext}`)
+        )
+      ) {
+        failures.push(`${file.name}: choose a video file (MP4, WebM, MOV, MKV, AVI).`);
+        continue;
+      }
+      if (
         server &&
         ["word-to-pdf", "excel-to-pdf", "powerpoint-to-pdf"].includes(
           tool.id,
@@ -192,7 +228,7 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
         failures.push(`${file.name}: expected ${acceptedTypes(tool.id)}.`);
         continue;
       }
-      if (!imageInput && (!server || ["protect", "unlock"].includes(tool.id))) {
+      if (!imageInput && !videoInput && (!server || ["protect", "unlock"].includes(tool.id))) {
         const signature = new TextDecoder().decode(
           await file.slice(0, 5).arrayBuffer(),
         );
@@ -393,6 +429,25 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
                 blob,
                 original: file.size,
               });
+            } else if (isBgTool) {
+              // Background removal — use the already-processed blob
+              if (!bgRemovedBlob) throw new Error("Remove the background first.");
+              let finalBlob = bgRemovedBlob;
+              const { compositeOnColor, compositeOnImage } = await import("../lib/bg-remove.js");
+              if (bgMode === "color") {
+                finalBlob = await compositeOnColor(bgRemovedBlob, bgColor, options.format, Number(options.quality));
+              } else if (bgMode === "image" && bgImage) {
+                finalBlob = await compositeOnImage(bgRemovedBlob, bgImage, options.format, Number(options.quality));
+              }
+              // If transparent, keep as PNG regardless of format selection
+              const ext = bgMode === "transparent" ? "png"
+                : options.format === "image/jpeg" ? "jpg"
+                : options.format.split("/")[1];
+              output.push({
+                name: `${prefix}-bg-removed.${ext}`,
+                blob: finalBlob,
+                original: file.size,
+              });
             } else if (isImage) {
               const { readImage, renderImage } =
                   await import("../lib/image.js"),
@@ -425,6 +480,24 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
               output.push({
                 name: `${prefix}-${tool.id}.${ext}`,
                 blob: result.blob,
+                original: file.size,
+              });
+            } else if (isVideoTool) {
+              // Video to audio extraction
+              setVideoProgress(0);
+              setStatus(`Extracting audio from ${file.name}...`);
+              const { extractAudio } = await import("../lib/video-audio.js");
+              const { blob, ext } = await extractAudio(file, {
+                format: audioFormat,
+                bitrate: audioBitrate,
+                onProgress: (p) => {
+                  setVideoProgress(p);
+                  setStatus(`Extracting audio... ${Math.round(p * 100)}%`);
+                },
+              });
+              output.push({
+                name: `${prefix}.${ext}`,
+                blob,
                 original: file.size,
               });
             }
@@ -581,15 +654,192 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
                     </div>
                   ))}
                 </div>
-                {preview && (
+                {preview && !isBgTool && (
                   <img
                     className="preview"
                     src={preview}
                     alt="Selected image preview"
                   />
                 )}
+                {/* ── Background Remover Live Panel ── */}
+                {isBgTool && files[0] && (
+                  <div className="bg-remove-panel">
+                    <div className="bg-remove-preview-area">
+                      {bgPreviewUrl ? (
+                        <div className="bg-remove-result-wrap">
+                          <div
+                            className="bg-remove-result-canvas"
+                            style={{
+                              background:
+                                bgMode === "color"
+                                  ? bgColor
+                                  : bgMode === "image" && bgImage
+                                    ? `url(${URL.createObjectURL(bgImage)}) center/cover`
+                                    : "repeating-conic-gradient(#1a1f2e 0% 25%, #0d1117 0% 50%) 0 0 / 20px 20px",
+                            }}
+                          >
+                            <img src={bgPreviewUrl} alt="Background removed" className="bg-remove-result-img" />
+                          </div>
+                          <span className="bg-remove-label">✓ Background removed</span>
+                        </div>
+                      ) : preview ? (
+                        <div className="bg-remove-original-wrap">
+                          <img src={preview} alt="Original" className="bg-remove-original-img" />
+                          <span className="bg-remove-label">Original image</span>
+                        </div>
+                      ) : null}
+                    </div>
+                    {!bgProcessed && (
+                      <button
+                        className="button primary bg-remove-btn"
+                        disabled={busy || !files[0]}
+                        onClick={async () => {
+                          setBusy(true);
+                          setStatus("Loading AI model... this may take a moment on first use.");
+                          setBgProgress(0);
+                          setErrors([]);
+                          try {
+                            const { removeBg } = await import("../lib/bg-remove.js");
+                            const blob = await removeBg(files[0], (p) => {
+                              setBgProgress(p);
+                              setStatus(`Removing background... ${Math.round(p * 100)}%`);
+                            });
+                            setBgRemovedBlob(blob);
+                            const url = URL.createObjectURL(blob);
+                            setBgPreviewUrl(url);
+                            setBgProcessed(true);
+                            setStatus("Background removed! Choose a replacement or download.");
+                          } catch (err) {
+                            setErrors([`Background removal failed: ${err.message}`]);
+                            setStatus("");
+                          } finally {
+                            setBusy(false);
+                          }
+                        }}
+                      >
+                        {busy ? `Removing... ${Math.round(bgProgress * 100)}%` : "🪄 Remove Background"}
+                      </button>
+                    )}
+                    {busy && bgProgress > 0 && (
+                      <div className="bg-progress-bar">
+                        <div className="bg-progress-fill" style={{ width: `${bgProgress * 100}%` }} />
+                      </div>
+                    )}
+                    {bgProcessed && (
+                      <div className="bg-replace-options">
+                        <h4>Replace background with:</h4>
+                        <div className="bg-mode-tabs">
+                          {["transparent", "color", "image"].map((m) => (
+                            <button
+                              key={m}
+                              className={`bg-mode-tab ${bgMode === m ? "active" : ""}`}
+                              onClick={() => setBgMode(m)}
+                            >
+                              {m === "transparent" ? "🔲 Transparent" : m === "color" ? "🎨 Color" : "🖼️ Image"}
+                            </button>
+                          ))}
+                        </div>
+                        {bgMode === "color" && (
+                          <div className="bg-color-picker">
+                            <label>Background color</label>
+                            <div className="bg-color-row">
+                              <input
+                                type="color"
+                                value={bgColor}
+                                onChange={(e) => setBgColor(e.target.value)}
+                              />
+                              <input
+                                type="text"
+                                value={bgColor}
+                                onChange={(e) => setBgColor(e.target.value)}
+                                maxLength={9}
+                                className="bg-color-text"
+                              />
+                              <div className="bg-color-presets">
+                                {["#ffffff", "#000000", "#1de9d5", "#ff9f43", "#6c5ce7", "#e74c3c", "#2ecc71", "#3498db"].map((c) => (
+                                  <button
+                                    key={c}
+                                    className="bg-color-swatch"
+                                    style={{ background: c }}
+                                    onClick={() => setBgColor(c)}
+                                    aria-label={`Set background to ${c}`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {bgMode === "image" && (
+                          <div className="bg-image-picker">
+                            <label>Background image</label>
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp"
+                              onChange={(e) => {
+                                const f = e.target.files[0];
+                                if (f && f.size > 10 * 1024 * 1024) {
+                                  setErrors(["Background image must be under 10 MB."]);
+                                  return;
+                                }
+                                setBgImage(f || null);
+                              }}
+                            />
+                            {bgImage && <span className="bg-image-name">✓ {bgImage.name}</span>}
+                          </div>
+                        )}
+                        <button
+                          className="button quiet bg-reset-btn"
+                          onClick={() => {
+                            setBgProcessed(false);
+                            setBgRemovedBlob(null);
+                            if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl);
+                            setBgPreviewUrl(null);
+                            setBgProgress(0);
+                            setBgMode("transparent");
+                            setStatus("");
+                            setResults([]);
+                          }}
+                        >
+                          ↺ Re-process
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* ── Video to Audio Preview & Progress ── */}
+                {isVideoTool && files[0] && (
+                  <div className="video-panel">
+                    <div className="video-player-wrap">
+                      <video
+                        src={videoPreviewUrl}
+                        controls
+                        playsInline
+                        className="video-preview-player"
+                      />
+                      <div className="video-meta-badge">
+                        <span>🎬 {files[0].name}</span>
+                        <span>{formatBytes(files[0].size)}</span>
+                      </div>
+                    </div>
+                    {busy && (
+                      <div className="video-progress-wrap">
+                        <div className="video-progress-header">
+                          <span>Converting video to audio...</span>
+                          <span>{Math.round(videoProgress * 100)}%</span>
+                        </div>
+                        <div className="video-progress-bar">
+                          <div
+                            className="video-progress-fill"
+                            style={{ width: `${Math.max(videoProgress * 100, 5)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {files[0] &&
                   !imageInput &&
+                  !videoInput &&
                   !server &&
                   tool.id !== "organize" && (
                     <>
@@ -606,6 +856,36 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
             <fieldset disabled={busy} className="settings">
               <legend>Settings</legend>
               <div className="fields">
+                {isVideoTool && (
+                  <>
+                    <Field label="Audio Output Format">
+                      <select
+                        value={audioFormat}
+                        onChange={(e) => setAudioFormat(e.target.value)}
+                      >
+                        <option value="mp3">MP3 — Most Compatible</option>
+                        <option value="wav">WAV — Lossless Uncompressed</option>
+                        <option value="aac">AAC — High Efficiency</option>
+                        <option value="ogg">OGG — Vorbis Audio</option>
+                        <option value="flac">FLAC — Lossless Compressed</option>
+                      </select>
+                    </Field>
+                    {["mp3", "aac", "ogg"].includes(audioFormat) && (
+                      <Field label="Audio Bitrate">
+                        <select
+                          value={audioBitrate}
+                          onChange={(e) => setAudioBitrate(e.target.value)}
+                        >
+                          <option value="96k">96 kbps — Compact</option>
+                          <option value="128k">128 kbps — Standard</option>
+                          <option value="192k">192 kbps — High Quality (Recommended)</option>
+                          <option value="256k">256 kbps — Very High Quality</option>
+                          <option value="320k">320 kbps — Maximum Quality</option>
+                        </select>
+                      </Field>
+                    )}
+                  </>
+                )}
                 {[
                   "split",
                   "pdf-to-jpg",
@@ -636,7 +916,7 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
                     </select>
                   </Field>
                 )}
-                {(isImage || tool.id === "pdf-to-jpg") && (
+                {((isImage && !isBgTool) || tool.id === "pdf-to-jpg") && (
                   <Field label="Output format">
                     <select
                       value={options.format}
@@ -648,7 +928,31 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
                     </select>
                   </Field>
                 )}
-                {(isImage ||
+                {isBgTool && bgProcessed && bgMode !== "transparent" && (
+                  <>
+                    <Field label="Output format">
+                      <select
+                        value={options.format}
+                        onChange={(e) => set("format", e.target.value)}
+                      >
+                        <option value="image/png">PNG</option>
+                        <option value="image/jpeg">JPEG</option>
+                        <option value="image/webp">WebP</option>
+                      </select>
+                    </Field>
+                    <Field label={`Quality ${Number(options.quality).toFixed(2)}`}>
+                      <input
+                        type="range"
+                        min="0.1"
+                        max="1"
+                        step="0.01"
+                        value={options.quality}
+                        onChange={(e) => set("quality", Number(e.target.value))}
+                      />
+                    </Field>
+                  </>
+                )}
+                {((isImage && !isBgTool) ||
                   ["pdf-to-jpg", "compress-pdf"].includes(tool.id)) && (
                   <Field
                     label={`Quality ${Number(options.quality).toFixed(2)}`}
@@ -1153,11 +1457,37 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
                 else to sign.
               </p>
             )}
-            {isImage && (
+            {isBgTool && (
+              <>
+                <h3>Background Remover</h3>
+                <p>
+                  Uses an AI model running entirely in your browser — no upload,
+                  no API key, completely private. The first run downloads the
+                  model (~30 MB) which is then cached.
+                </p>
+                <p>
+                  After removal you can keep a transparent background, set a solid
+                  colour, or drop in your own background image.
+                </p>
+              </>
+            )}
+            {isImage && !isBgTool && (
               <p>
                 Re-encoding may reduce quality. JPEG removes transparency and
                 uses a white background. PNG ignores the quality slider.
               </p>
+            )}
+            {isVideoTool && (
+              <>
+                <h3>Video to Audio Converter</h3>
+                <p>
+                  Extracts high-fidelity audio tracks from video files using WebAssembly.
+                  Your video is processed 100% locally in your browser — zero uploads, zero tracking, total privacy.
+                </p>
+                <p>
+                  Supports MP3, WAV, AAC, OGG, and FLAC with adjustable bitrates.
+                </p>
+              </>
             )}
             <p>
               Limits: 300 pages, 24 megapixels per image, and 150 MB per

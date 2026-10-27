@@ -1,4 +1,32 @@
 const definitions = [
+  [
+    "convert",
+    "Image converter",
+    "Batch-convert PNG, JPEG, and WebP images.",
+    "local",
+    "IMG",
+  ],
+  [
+    "bg-remove",
+    "Background remover",
+    "Remove backgrounds and replace with a color or image.",
+    "local",
+    "BG",
+  ],
+  [
+    "resize",
+    "Image resizer",
+    "Resize with dimensions, percentages, and aspect lock.",
+    "local",
+    "Size",
+  ],
+  [
+    "compress",
+    "Image compressor",
+    "Re-encode images and compare actual output sizes.",
+    "local",
+    "Small",
+  ],
   ["merge", "Merge PDF", "Combine PDFs in your chosen order.", "local", "PDF"],
   [
     "split",
@@ -127,25 +155,11 @@ const definitions = [
     "Pages",
   ],
   [
-    "convert",
-    "Image converter",
-    "Batch-convert PNG, JPEG, and WebP images.",
+    "video-to-audio",
+    "Video to Audio",
+    "Extract audio from video files as MP3, WAV, or AAC.",
     "local",
-    "IMG",
-  ],
-  [
-    "resize",
-    "Image resizer",
-    "Resize with dimensions, percentages, and aspect lock.",
-    "local",
-    "Size",
-  ],
-  [
-    "compress",
-    "Image compressor",
-    "Re-encode images and compare actual output sizes.",
-    "local",
-    "Small",
+    "🎵",
   ],
 ];
 export const tools = definitions.map(
@@ -158,10 +172,13 @@ export const tools = definitions.map(
     tint: ["#d9f3b0", "#fbe4cf", "#dff2f4", "#efe6ff"][index % 4],
   }),
 );
-export const imageTools = new Set(["convert", "resize", "compress"]);
+export const imageTools = new Set(["convert", "resize", "compress", "bg-remove"]);
+export const videoTools = new Set(["video-to-audio"]);
 export function acceptedTypes(id) {
   if (imageTools.has(id) || id === "jpg-to-pdf")
     return "image/png,image/jpeg,image/webp";
+  if (videoTools.has(id))
+    return "video/mp4,video/webm,video/quicktime,video/x-matroska,video/avi,.mp4,.webm,.mov,.mkv,.avi";
   if (id === "word-to-pdf") return ".docx";
   if (id === "excel-to-pdf") return ".xlsx";
   if (id === "powerpoint-to-pdf") return ".pptx";

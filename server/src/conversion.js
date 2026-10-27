@@ -164,14 +164,25 @@ export async function validateUpload(file, kind) {
           "Macros and embedded executable objects are unsupported.",
           415,
         );
-      if (
-        item.name.endsWith(".rels") &&
-        /TargetMode\s*=\s*["']External/i.test(await item.async("string"))
-      )
-        throw new ConversionError(
-          "Documents with external resource links are unsupported.",
-          415,
+      if (item.name.endsWith(".rels")) {
+        const content = await item.async("string");
+        const externalMatches = content.match(
+          /<Relationship[^>]*TargetMode\s*=\s*["']External["'][^>]*>/gi,
         );
+        if (externalMatches) {
+          for (const rel of externalMatches) {
+            const isHyperlink = /Type\s*=\s*["'][^"']*\/hyperlink["']/i.test(rel);
+            const isSafeWebTarget = /Target\s*=\s*["'](?:https?:\/\/|mailto:)/i.test(rel);
+            const isDangerousScheme = /Target\s*=\s*["'](?:file|smb|gopher|ftp):\/\//i.test(rel);
+            if (isDangerousScheme || (!isHyperlink && !isSafeWebTarget)) {
+              throw new ConversionError(
+                "Documents with dangerous external resource links are unsupported.",
+                415,
+              );
+            }
+          }
+        }
+      }
     }
     return extension;
   }
