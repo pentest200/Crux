@@ -41,8 +41,10 @@ is enabled. Missing MongoDB/signing configuration causes startup to fail closed.
 
 On Render, after owner approval, set those variables on the active API service,
 using the actual MongoDB connection string and exact client origin
-`https://ghost-files-client-0fz5.onrender.com`. The Blueprint enables accounts and
-MongoDB and declares the connection string as `sync: false`; existing services
+`https://ghost-files-client-0fz5.onrender.com`. The Blueprint leaves accounts and
+MongoDB disabled until the owner approves transferring the connection credentials
+to Render. Enable both flags together after setting the connection string.
+The connection string is declared as `sync: false`; existing services
 must receive its value through the service environment. A generated signing
 secret is declared with `generateValue: true`, preserving an existing value.
 Use a dedicated database user restricted to this app's database, TLS, and an
