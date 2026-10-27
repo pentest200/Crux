@@ -1,19 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { tools } from "./lib/catalog.js";
 import Workspace from "./components/Workspace.jsx";
+import SpaceBackground from "./components/SpaceBackground.jsx";
 
 export default function App() {
   const [active, setActive] = useState(null),
     [query, setQuery] = useState(""),
     [menu, setMenu] = useState(false);
-  const [dark, setDark] = useState(
-    () => localStorage.getItem("ghost-files-theme") === "dark",
-  );
-  useEffect(() => {
-    localStorage.setItem("ghost-files-theme", dark ? "dark" : "light");
-  }, [dark]);
+
   return (
-    <div className={dark ? "app dark" : "app"}>
+    <div className="app">
+      <SpaceBackground />
       <header className="nav shell">
         <a className="brand" href="#home">
           <span className="brand-mark">G</span>Ghost Files
@@ -37,13 +34,6 @@ export default function App() {
             onClick={() => setMenu(!menu)}
           >
             Menu
-          </button>
-          <button
-            className="icon-button"
-            aria-label="Toggle theme"
-            onClick={() => setDark(!dark)}
-          >
-            {dark ? "Light" : "Dark"}
           </button>
         </div>
       </header>

@@ -7,8 +7,8 @@
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  color: #102d2a;
-  background: #f6f7f2;
+  color: #e8edf8;
+  background: #020408;
   font-synthesis: none;
 }
 * {
@@ -16,31 +16,25 @@
 }
 html {
   scroll-behavior: smooth;
+  background: #020408;
 }
 body {
   margin: 0;
+  background: #020408;
+  color: #e8edf8;
 }
 .app {
-  --ink: #102d2a;
-  --muted: #627871;
-  --canvas: #f6f7f2;
-  --surface: #fff;
-  --line: #dce6df;
-  --teal: #0f5b52;
-  --deep: #0a3733;
-  --lime: #d9f36b;
-  background: var(--canvas);
+  --ink: #e8edf8;
+  --muted: #8e9ab8;
+  --canvas: transparent;
+  --surface: rgba(12, 18, 35, 0.65);
+  --line: rgba(100, 140, 200, 0.14);
+  --teal: #5cf5e6;
+  --deep: #060b14;
+  --lime: #5cf5e6;
+  background: #020408;
   color: var(--ink);
   min-height: 100vh;
-}
-.app.dark {
-  --ink: #eff8dc;
-  --muted: #a7beb2;
-  --canvas: #0d2422;
-  --surface: #12322e;
-  --line: #2b5049;
-  --teal: #9ed39d;
-  --deep: #071e1c;
 }
 .shell {
   width: min(1180px, calc(100% - 40px));
@@ -206,9 +200,9 @@ body {
 .work-drop {
   width: 100%;
   min-height: 290px;
-  border: 1.5px dashed #a8c4b7;
+  border: 1.5px dashed rgba(92, 245, 230, 0.22);
   border-radius: 21px;
-  background: linear-gradient(145deg, #edf2ea, var(--surface));
+  background: rgba(10, 16, 32, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -384,8 +378,8 @@ body {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 55, 51, 0.38);
-  backdrop-filter: blur(8px);
+  background: rgba(2, 4, 10, 0.65);
+  backdrop-filter: blur(14px);
   z-index: 4;
   overflow: auto;
   padding: 28px 16px;
@@ -434,8 +428,9 @@ body {
 .privacy-banner {
   display: flex;
   gap: 10px;
-  background: #edf8dc;
-  color: #35602e;
+  background: rgba(20, 40, 50, 0.5);
+  color: #5cf5e6;
+  border: 1px solid rgba(92, 245, 230, 0.12);
   padding: 13px;
   border-radius: 13px;
   font-size: 12px;
@@ -493,8 +488,9 @@ body {
   margin-top: 13px;
 }
 .result {
-  background: #edf8dc;
-  color: #35602e;
+  background: rgba(20, 40, 50, 0.5);
+  color: #5cf5e6;
+  border: 1px solid rgba(92, 245, 230, 0.12);
   padding: 11px;
   border-radius: 11px;
   font-size: 12px;

@@ -1,0 +1,315 @@
+/* =============================================
+   SPACE THEME — Permanent default theme
+   ============================================= */
+
+/* --- full-viewport canvas -------- */
+.space-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: auto;
+}
+
+/* floating glow orbs (framer-motion) */
+.space-glow {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(120px);
+  z-index: 0;
+  will-change: transform;
+}
+.space-glow--teal {
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(29, 233, 213, 0.12), transparent 70%);
+  top: 18%;
+  left: 48%;
+}
+.space-glow--amber {
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, rgba(255, 159, 67, 0.10), transparent 70%);
+  top: 42%;
+  left: 28%;
+}
+
+/* --- raise all content above the canvas --- */
+.app .nav,
+.app main,
+.app .footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- palette for space theme --- */
+.app {
+  --ink: #e8edf8;
+  --muted: #8e9ab8;
+  --canvas: transparent;
+  --surface: rgba(12, 18, 35, 0.65);
+  --line: rgba(100, 140, 200, 0.14);
+  --teal: #5cf5e6;
+  --deep: #060b14;
+  --lime: #5cf5e6;
+  background: #020408;
+}
+
+/* glassmorphism cards */
+.app .tool-card,
+.app .hero-card,
+.app .work-card,
+.app .side-panel,
+.app .steps > div,
+.app .workspace {
+  background: rgba(12, 18, 40, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(100, 180, 255, 0.10);
+  box-shadow:
+    0 4px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.app .tool-card:hover {
+  background: rgba(20, 28, 55, 0.7);
+  border-color: rgba(92, 245, 230, 0.22);
+  box-shadow:
+    0 15px 50px rgba(29, 233, 213, 0.08),
+    0 4px 20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: translateY(-4px);
+}
+
+/* privacy band — deeper glass */
+.app .privacy-band {
+  background: rgba(6, 10, 22, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(92, 245, 230, 0.12);
+}
+.app .privacy-band p {
+  color: #8e9ab8;
+}
+.app .privacy-list > div {
+  border-color: rgba(92, 245, 230, 0.15);
+}
+.app .privacy-list span {
+  color: #8e9ab8;
+}
+
+/* nav bar — transparent glass */
+.app .nav {
+  border-bottom-color: rgba(100, 180, 255, 0.08);
+  background: rgba(6, 10, 22, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 0;
+}
+
+/* buttons — space style */
+.app .primary {
+  background: linear-gradient(135deg, #1de9d5 0%, #0abcaf 100%);
+  color: #051210;
+  box-shadow: 0 0 20px rgba(29, 233, 213, 0.25);
+}
+.app .primary:hover {
+  box-shadow: 0 0 35px rgba(29, 233, 213, 0.4);
+}
+.app .quiet {
+  background: rgba(20, 30, 55, 0.6);
+  border-color: rgba(100, 180, 255, 0.12);
+}
+.app .lime-button {
+  background: linear-gradient(135deg, #1de9d5 0%, #5cf5e6 100%);
+  color: #051210;
+}
+
+/* icon button */
+.app .icon-button {
+  background: rgba(15, 22, 40, 0.6);
+  border-color: rgba(100, 180, 255, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+/* brand mark */
+.app .brand-mark {
+  background: linear-gradient(135deg, #1de9d5, #0abcaf);
+  color: #051210;
+  box-shadow: 0 0 18px rgba(29, 233, 213, 0.3);
+}
+
+/* eyebrow dot — nebula orange */
+.app .eyebrow span {
+  background: #ff9f43;
+  box-shadow: 0 0 8px rgba(255, 159, 67, 0.5);
+}
+
+/* hero emphasis */
+.app .hero h1 em {
+  color: #5cf5e6;
+  text-shadow: 0 0 30px rgba(92, 245, 230, 0.2);
+}
+
+/* tool icon subtle glow */
+.app .tool-icon {
+  color: #e8edf8;
+  box-shadow: 0 0 12px rgba(29, 233, 213, 0.10);
+}
+
+/* dropzone */
+.app .dropzone,
+.app .work-drop {
+  background: rgba(10, 16, 32, 0.5);
+  border-color: rgba(92, 245, 230, 0.18);
+}
+.app .dropzone b {
+  background: linear-gradient(135deg, #1de9d5, #5cf5e6);
+  color: #051210;
+}
+
+/* search input */
+.app .search-label input,
+.app .full-field input,
+.app .full-field textarea {
+  background: rgba(12, 18, 35, 0.6);
+  border-color: rgba(100, 180, 255, 0.12);
+}
+
+/* fields */
+.app .fields input,
+.app .fields select {
+  background: rgba(12, 18, 35, 0.6);
+  border-color: rgba(100, 180, 255, 0.12);
+}
+
+/* result / privacy banner */
+.app .privacy-banner {
+  background: rgba(20, 40, 50, 0.5);
+  color: #5cf5e6;
+  border: 1px solid rgba(92, 245, 230, 0.12);
+}
+.app .result {
+  background: rgba(20, 40, 50, 0.5);
+  color: #5cf5e6;
+  border: 1px solid rgba(92, 245, 230, 0.12);
+}
+
+/* footer */
+.app .footer {
+  border-top-color: rgba(100, 180, 255, 0.08);
+}
+
+/* kicker / eyebrow in space teal */
+.app .kicker {
+  color: #5cf5e6;
+}
+.app .kicker.lime {
+  color: #5cf5e6;
+}
+
+/* steps number accent */
+.app .steps b {
+  color: #5cf5e6;
+  text-shadow: 0 0 12px rgba(92, 245, 230, 0.25);
+}
+
+/* local indicator */
+.app .local {
+  color: #5cf5e6;
+}
+.app .local i {
+  background: #5cf5e6;
+  box-shadow: 0 0 8px rgba(92, 245, 230, 0.4);
+}
+
+/* card bottom / top muted text */
+.app .card-top,
+.app .card-bottom {
+  color: #8e9ab8;
+}
+
+/* modal backdrop */
+.app .modal-backdrop {
+  background: rgba(2, 4, 10, 0.65);
+  backdrop-filter: blur(14px);
+}
+
+/* server consent */
+.app .server-consent {
+  background: rgba(12, 18, 35, 0.6);
+  border-color: rgba(100, 180, 255, 0.12);
+}
+
+/* file row */
+.app .file-row {
+  border-color: rgba(100, 180, 255, 0.10);
+}
+.app .file-row button,
+.app .page-tile button {
+  background: rgba(15, 22, 40, 0.6);
+  border-color: rgba(100, 180, 255, 0.12);
+}
+
+/* pdf preview */
+.app .pdf-preview {
+  background: rgba(10, 16, 32, 0.5);
+}
+
+/* page tile */
+.app .page-tile {
+  border-color: rgba(100, 180, 255, 0.10);
+}
+
+/* menu-open on mobile */
+.app .nav nav.menu-open {
+  background: rgba(8, 14, 28, 0.9);
+  backdrop-filter: blur(20px);
+  border-color: rgba(100, 180, 255, 0.10);
+}
+
+/* hero card shadow — cosmic glow */
+.app .hero-card {
+  box-shadow:
+    0 24px 80px rgba(29, 233, 213, 0.06),
+    0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* scrollbar */
+.app ::-webkit-scrollbar {
+  width: 8px;
+}
+.app ::-webkit-scrollbar-track {
+  background: #060b14;
+}
+.app ::-webkit-scrollbar-thumb {
+  background: rgba(92, 245, 230, 0.15);
+  border-radius: 4px;
+}
+.app ::-webkit-scrollbar-thumb:hover {
+  background: rgba(92, 245, 230, 0.28);
+}
+
+/* selection colour */
+.app ::selection {
+  background: rgba(29, 233, 213, 0.25);
+  color: #ffffff;
+}
+
+/* focus outlines */
+.app a:focus-visible,
+.app button:focus-visible,
+.app input:focus-visible,
+.app textarea:focus-visible,
+.app select:focus-visible {
+  outline-color: #5cf5e6;
+}
+
+/* range accent */
+.app .fields input[type="range"] {
+  accent-color: #5cf5e6;
+}
+.app .fields input[type="checkbox"] {
+  accent-color: #5cf5e6;
+}
