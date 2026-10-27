@@ -40,7 +40,7 @@ services:
       context: .
       dockerfile: client/Dockerfile
     environment:
-      API_HOSTPORT: api:8787
+      API_BASE_URL: http://api:8787
     ports: ["4180:80"]
     depends_on:
       api:

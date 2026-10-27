@@ -32,8 +32,5 @@ services:
     healthCheckPath: /
     autoDeployTrigger: commit
     envVars:
-      - key: API_HOSTPORT
-        fromService:
-          type: web
-          name: ghost-files-api
-          property: hostport
+      - key: API_BASE_URL
+        value: https://ghost-files-api-0fz5.onrender.com
