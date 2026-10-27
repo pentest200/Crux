@@ -8,7 +8,7 @@ The screenshot alone does not establish why Google classified the URL.
 
 - Removed the simulated login/signup form. It accepted arbitrary passwords without
   a backend, generated placeholder tokens, and incorrectly claimed secure sync.
-- Removed the sign-in requirement for downloading generated files.
+- Replaced the demo download gate with a server-verified session check.
 - Removed the old demo profile and token from browser storage on startup.
 - Replaced the demo form with optional, server-verified MongoDB authentication.
   Account controls remain hidden until the backend is configured. See authentication.md.
@@ -18,7 +18,7 @@ The screenshot alone does not establish why Google classified the URL.
 ## After the owner approves publication
 
 1. Push the reviewed source and monitor the Render client deploy until live.
-2. Verify guest downloads and real authentication if accounts have been enabled.
+2. Verify login/signup, rejection of unauthenticated downloads, and download resumption after login.
 3. Open the site's verified Google Search Console property and inspect Security
    Issues, including sample URLs and the reason shown. Fix any additional findings.
 4. Request a security review only after all findings are resolved. Explain the

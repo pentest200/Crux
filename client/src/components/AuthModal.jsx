@@ -1,7 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { authRequest } from "../lib/auth.js";
 
-export default function AuthModal({ initialMode, onClose, onAuthSuccess }) {
+export default function AuthModal({
+  initialMode,
+  onClose,
+  onAuthSuccess,
+  available = false,
+  downloadRequired = false,
+}) {
   const dialog = useRef(null);
   const [mode, setMode] = useState(initialMode);
   const [name, setName] = useState("");
@@ -16,6 +22,7 @@ export default function AuthModal({ initialMode, onClose, onAuthSuccess }) {
   }, []);
   async function submit(event) {
     event.preventDefault();
+    if (!available) return;
     setError("");
     setBusy(true);
     try {
@@ -55,83 +62,96 @@ export default function AuthModal({ initialMode, onClose, onAuthSuccess }) {
         </h2>
         <p>
           Your name, email, and password hash are stored on our server. Your
-          files are not saved to your account. Tools and downloads also work
-          without an account.
+          files are not saved to your account. Log in before downloading your
+          results.
         </p>
+        {downloadRequired && (
+          <p className="auth-notice-banner">
+            Log in or create an account to continue. Your result will download
+            after sign-in.
+          </p>
+        )}
+        {!available && (
+          <p role="alert" className="auth-error-banner">
+            The account service is unavailable. Please try again shortly.
+          </p>
+        )}
       </div>
       <form className="auth-form" onSubmit={submit}>
-        {mode === "signup" && (
+        <fieldset disabled={!available || busy} className="auth-fields">
+          {mode === "signup" && (
+            <label className="auth-field">
+              Name
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
+                maxLength={80}
+                required
+              />
+            </label>
+          )}
           <label className="auth-field">
-            Name
+            Email
             <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoComplete="name"
-              maxLength={80}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="username"
+              maxLength={254}
               required
             />
           </label>
-        )}
-        <label className="auth-field">
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="username"
-            maxLength={254}
-            required
-          />
-        </label>
-        <label className="auth-field">
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete={
-              mode === "signup" ? "new-password" : "current-password"
-            }
-            minLength={15}
-            maxLength={72}
-            aria-describedby="password-policy"
-            required
-          />
-        </label>
-        <p id="password-policy">
-          Use a unique password of at least 15 characters (maximum 72 UTF-8
-          bytes).
-        </p>
-        {error && (
-          <p role="alert" className="auth-error-banner">
-            {error}
+          <label className="auth-field">
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={
+                mode === "signup" ? "new-password" : "current-password"
+              }
+              minLength={15}
+              maxLength={72}
+              aria-describedby="password-policy"
+              required
+            />
+          </label>
+          <p id="password-policy">
+            Use a unique password of at least 15 characters (maximum 72 UTF-8
+            bytes).
           </p>
-        )}
-        <button
-          type="submit"
-          className="button primary auth-submit"
-          disabled={busy}
-        >
-          {busy
-            ? "Please wait…"
-            : mode === "signup"
-              ? "Create account"
-              : "Log in"}
-        </button>
-        <button
-          type="button"
-          className="auth-link-bold"
-          disabled={busy}
-          onClick={() => {
-            setMode(mode === "signup" ? "login" : "signup");
-            setPassword("");
-            setError("");
-          }}
-        >
-          {mode === "signup"
-            ? "Already have an account? Log in"
-            : "Create an account"}
-        </button>
+          {error && (
+            <p role="alert" className="auth-error-banner">
+              {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            className="button primary auth-submit"
+            disabled={busy}
+          >
+            {busy
+              ? "Please wait…"
+              : mode === "signup"
+                ? "Create account"
+                : "Log in"}
+          </button>
+          <button
+            type="button"
+            className="auth-link-bold"
+            disabled={busy}
+            onClick={() => {
+              setMode(mode === "signup" ? "login" : "signup");
+              setPassword("");
+              setError("");
+            }}
+          >
+            {mode === "signup"
+              ? "Already have an account? Log in"
+              : "Create an account"}
+          </button>
+        </fieldset>
       </form>
     </dialog>
   );

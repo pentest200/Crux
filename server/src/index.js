@@ -38,8 +38,9 @@ app.get("/health", (_request, response) =>
   response.json({ ok: true, service: "ghost-files-api" }),
 );
 app.use("/capabilities", capabilitiesRouter);
-app.use("/auth", createAuthRouter(config));
-app.use("/convert", officeRouter);
+const authRouter = createAuthRouter(config);
+app.use("/auth", authRouter);
+app.use("/convert", authRouter.requireSession, officeRouter);
 app.use((_request, response) =>
   response.status(404).json({ error: "Not found." }),
 );

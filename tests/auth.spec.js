@@ -4,6 +4,8 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { randomBytes, randomUUID } from "node:crypto";
 import { createAuthRouter, User, AuthSession } from "../server/src/auth.js";
+import { PDFDocument } from "pdf-lib";
+import { readFile } from "node:fs/promises";
 
 test("real account signup, reload, logout, and password verification", async ({
   page,
@@ -33,9 +35,37 @@ test("real account signup, reload, logout, and password verification", async ({
       server.once("listening", resolve);
       server.once("error", reject);
     });
-    await page.goto("/");
+    await page.goto("/tools/merge-pdf");
+    const sample = await PDFDocument.create();
+    sample.addPage([200, 300]);
+    const bytes = Buffer.from(await sample.save());
     await page
-      .getByRole("button", { name: "Create account", exact: true })
+      .locator('input[type="file"]')
+      .first()
+      .setInputFiles([{
+        name: "sample.pdf",
+        mimeType: "application/pdf",
+        buffer: bytes,
+      }, { name: "second.pdf", mimeType: "application/pdf", buffer: bytes }]);
+    await page
+      .getByRole("button", { name: "Process locally", exact: true })
+      .click();
+    await expect(page.getByRole("status")).toContainText(
+      "1 output file(s) ready",
+    );
+    const downloads = [];
+    page.on("download", (download) => downloads.push(download));
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    expect(downloads).toHaveLength(0);
+    await expect(
+      page.getByText("Log in or create an account to continue.", {
+        exact: false,
+      }),
+    ).toBeVisible();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Create an account", exact: true })
       .click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel("Name", { exact: true }).fill("Mongo Test User");
@@ -44,9 +74,16 @@ test("real account signup, reload, logout, and password verification", async ({
       .fill("browser@example.test");
     const password = "a unique browser test password!";
     await dialog.getByLabel("Password", { exact: true }).fill(password);
+    const downloaded = page.waitForEvent("download");
     await dialog
       .getByRole("button", { name: "Create account", exact: true })
       .click();
+    const output = await downloaded;
+    expect(
+      (
+        await PDFDocument.load(await readFile(await output.path()))
+      ).getPageCount(),
+    ).toBe(2);
     await expect(dialog).toHaveCount(0);
     await expect(
       page.getByText("Mongo Test User", { exact: true }),
@@ -93,6 +130,36 @@ test("real account signup, reload, logout, and password verification", async ({
     await expect(
       page.getByText("Mongo Test User", { exact: true }),
     ).toBeVisible();
+    await page
+      .locator('input[type="file"]')
+      .first()
+      .setInputFiles([{
+        name: "sample.pdf",
+        mimeType: "application/pdf",
+        buffer: bytes,
+      }, { name: "second.pdf", mimeType: "application/pdf", buffer: bytes }]);
+    await page
+      .getByRole("button", { name: "Process locally", exact: true })
+      .click();
+    await expect(page.getByRole("status")).toContainText(
+      "1 output file(s) ready",
+    );
+    await AuthSession.deleteMany({ userId: stored._id });
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Close account form" }).click();
+    await expect(dialog).toHaveCount(0);
+    expect(downloads).toHaveLength(1);
+    await page.goto("/tools/split-pdf");
+    await page.locator('input[type="file"]').first().setInputFiles([
+      { name: "first.pdf", mimeType: "application/pdf", buffer: bytes },
+      { name: "second.pdf", mimeType: "application/pdf", buffer: bytes },
+    ]);
+    await page.getByRole("button", { name: "Process locally", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("2 output file(s) ready");
+    await page.getByRole("button", { name: "Download all as ZIP" }).click();
+    await expect(dialog).toBeVisible();
+    expect(downloads).toHaveLength(1);
   } finally {
     if (server?.listening)
       await new Promise((resolve) => server.close(resolve));

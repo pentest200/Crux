@@ -44,7 +44,7 @@ function Field({ label, children }) {
     </label>
   );
 }
-export default function Workspace({ tool, onClose, presentation = "dialog" }) {
+export default function Workspace({ tool, onClose, presentation = "dialog", onAuthorizeDownload }) {
   const isPage = presentation === "page";
   const [files, setFiles] = useState([]),
     [options, setOptions] = useState(defaults),
@@ -69,7 +69,7 @@ export default function Workspace({ tool, onClose, presentation = "dialog" }) {
   const [videoProgress, setVideoProgress] = useState(0);
 
   const handleDownload = (downloadAction) => {
-    downloadAction();
+    return onAuthorizeDownload(downloadAction);
   };
   const [consent, setConsent] = useState(false),
     [password, setPassword] = useState(""),
@@ -302,7 +302,11 @@ export default function Workspace({ tool, onClose, presentation = "dialog" }) {
       }
     }
   }
-  async function run() {
+  async function run(authorized = false) {
+    if (server && authorized !== true) {
+      await onAuthorizeDownload(() => run(true));
+      return;
+    }
     if (busy) return;
     setErrors([]);
     setStatus("");

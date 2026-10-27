@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   motion,
   useReducedMotion,
@@ -45,6 +45,12 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [authMode, setAuthMode] = useState(null);
   const [accountError, setAccountError] = useState("");
+  const pendingDownload = useRef(null);
+  const checkingDownload = useRef(false);
+  useEffect(() => {
+    pendingDownload.current = null;
+    setAuthMode(null);
+  }, [pathname]);
   useEffect(() => {
     document.title = activeTool ? `${activeTool.name} | Ghost Files` : isHome ? "Ghost Files — Private file tools" : "Page not found | Ghost Files";
     setMenu(false);
@@ -89,6 +95,32 @@ export default function App() {
     try { await authRequest("logout", {}); setUser(null); }
     catch (error) { setAccountError(error.message); }
   }
+  async function authorizeDownload(action) {
+    if (checkingDownload.current) return;
+    checkingDownload.current = true;
+    setAccountError("");
+    try {
+      await authRequest("download", {});
+      await action();
+    } catch (error) {
+      if (error.status === 401) {
+        setUser(null);
+        pendingDownload.current = { pathname, action };
+        setAuthMode("login");
+      } else {
+        setAccountError(error.message);
+      }
+    } finally {
+      checkingDownload.current = false;
+    }
+  }
+  function authenticated(user) {
+    setUser(user);
+    setAuthMode(null);
+    const pending = pendingDownload.current;
+    pendingDownload.current = null;
+    if (pending?.pathname === pathname) void authorizeDownload(pending.action);
+  }
 
   return (
     <div className="app">
@@ -108,14 +140,14 @@ export default function App() {
           <a href="/#workflow" onClick={followLink}>Workflow <span>03</span></a>
         </nav>
         <div className="nav-buttons">
-          <span className="mono-label">No account required</span>
-          {accountsEnabled && (user ? <>
+          <span className="mono-label">Log in to download</span>
+          {user ? <>
             <span>{user.name}</span>
             <button type="button" className="auth-nav-btn" onClick={logout}>Log out</button>
           </> : <>
             <button type="button" className="auth-nav-btn" onClick={() => setAuthMode("login")}>Log in</button>
             <button type="button" className="auth-nav-btn auth-nav-signup" onClick={() => setAuthMode("signup")}>Create account</button>
-          </>)}
+          </>}
           <button className="icon-button mobile-toggle" aria-label="Toggle navigation" aria-expanded={menu} onClick={() => setMenu(!menu)}>Menu</button>
         </div>
       </header>
@@ -160,12 +192,12 @@ export default function App() {
         <section id="privacy" className="section shell"><Reveal reduced={reduced}><div className="privacy-band"><div><div className="kicker lime"><span>02</span> A clearer promise</div><h2>Your file should never take a detour.</h2><p>Local tools keep your files in browser memory. Server tools ask for approval at the moment of transfer and clean up after they finish.</p></div><div className="privacy-list"><div><b><span>01</span> On your device</b><span>PDF, image, HTML, and text-based exports run locally.</span></div><div><b><span>02</span> Temporary by consent</b><span>Office rendering and password operations use the server only after approval.</span></div><div><b><span>03</span> Honest limits</b><span>Local processing reduces exposure; it cannot protect a compromised browser or device.</span></div></div></div></Reveal></section>
 
         <section id="workflow" className="section shell"><Reveal reduced={reduced}><div className="section-head"><div><div className="kicker"><span>03</span> Simple by design</div><h2>One session.<br /><em>Three decisions.</em></h2></div><p className="section-note">A visible path from input to result, with no mystery state in between.</p></div></Reveal><div className="steps">{[["Choose files", "Drop or browse. Check where the operation will happen."], ["Configure and process", "Adjust settings, preview, and run the operation."], ["Download your result", "Download individually or bundle successful results into a ZIP."]].map(([title, copy], index) => <Reveal key={title} delay={index * 0.06} reduced={reduced}><div className="step-card"><b>0{index + 1}</b><h3>{title}</h3><p>{copy}</p><span className="step-line" /></div></Reveal>)}</div></section>
-        </> : activeTool ? <Workspace key={activeTool.id} tool={activeTool} onClose={() => navigate("/#tools")} presentation="page" /> : <section className="section shell"><h1>Page not found</h1><p>Choose a tool from the toolkit.</p><a className="button primary" href="/#tools" onClick={followLink}>Back to tools</a></section>}
+        </> : activeTool ? <Workspace key={activeTool.id} tool={activeTool} onClose={() => navigate("/#tools")} presentation="page" onAuthorizeDownload={authorizeDownload} /> : <section className="section shell"><h1>Page not found</h1><p>Choose a tool from the toolkit.</p><a className="button primary" href="/#tools" onClick={followLink}>Back to tools</a></section>}
       </main>
 
       <footer className="shell footer"><span className="brand"><span className="brand-mark">G</span>Ghost Files</span><div><div><a href="/#tools" onClick={followLink}>All tools</a><i>·</i><a href="/#privacy" onClick={followLink}>Privacy</a><i>·</i><a href="/#workflow" onClick={followLink}>How it works</a></div><p>50 MB local · 25 MB server · 300 PDF pages · 24 MP images</p></div></footer>
 
-      {authMode && <AuthModal initialMode={authMode} onClose={() => setAuthMode(null)} onAuthSuccess={user => { setUser(user); setAuthMode(null); }} />}
+      {authMode && <AuthModal initialMode={authMode} available={accountsEnabled} downloadRequired={!!pendingDownload.current} onClose={() => { pendingDownload.current = null; setAuthMode(null); }} onAuthSuccess={authenticated} />}
     </div>
   );
 }

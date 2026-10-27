@@ -115,7 +115,7 @@ test("expired jobs are removed", async () => {
   await cleanupExpired(Date.now(), 1000);
   assert.ok(!(await readdir(jobRoot)).includes("job-expiry-test"));
 });
-test("HTTP health, capability, consent, path access, and headers", async () => {
+test("HTTP health, capability, authentication, path access, and headers", async () => {
   const server = app.listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));
   const origin = `http://127.0.0.1:${server.address().port}`;
@@ -130,7 +130,7 @@ test("HTTP health, capability, consent, path access, and headers", async () => {
       method: "POST",
       body: "not uploaded multipart",
     });
-    assert.equal(denial.status, 428);
+    assert.equal(denial.status, 503);
     assert.equal((await fetch(`${origin}/jobs/nonexistent`)).status, 404);
   } finally {
     await new Promise((resolve) => server.close(resolve));

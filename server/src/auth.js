@@ -175,15 +175,32 @@ export function createAuthRouter(settings, store = mongoAuthStore) {
     const user = await store.findUserById(claims.sub);
     return user ? { user, tokenHash: digest(claims.jti) } : null;
   }
+  router.requireSession = async (req, res, next) => {
+    res.set("Cache-Control", "no-store");
+    if (!enabled)
+      return res
+        .status(503)
+        .json({ error: "Accounts are not configured on this server." });
+    const session = await readSession(req);
+    if (!session) {
+      clearCookie(res);
+      return res
+        .status(401)
+        .json({ error: "Log in to download your results." });
+    }
+    req.authUser = publicUser(session.user);
+    next();
+  };
+  router.post("/download", router.requireSession, (_req, res) =>
+    res.status(204).end(),
+  );
   router.post("/signup", ipLimit, accountLimit, async (req, res) => {
     const input = registration.safeParse(req.body);
     if (!input.success)
-      return res
-        .status(400)
-        .json({
-          error:
-            "Enter a name, valid email, and password of 15–72 characters (maximum 72 UTF-8 bytes).",
-        });
+      return res.status(400).json({
+        error:
+          "Enter a name, valid email, and password of 15–72 characters (maximum 72 UTF-8 bytes).",
+      });
     const { email, name, password } = input.data;
     const passwordHash = await bcrypt.hash(password, 12);
     let user;

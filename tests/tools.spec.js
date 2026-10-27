@@ -16,6 +16,13 @@ const image = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=",
   "base64",
 );
+// File-format tests isolate conversion behavior from authentication. The real
+// MongoDB browser suite separately verifies login and the download gate.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/auth/status", route => route.fulfill({ json: { enabled: true } }));
+  await page.route("**/api/auth/me", route => route.fulfill({ json: { user: { id: "fixture", name: "Test user", email: "test@example.test" } } }));
+  await page.route("**/api/auth/download", route => route.fulfill({ status: 204 }));
+});
 async function choose(page, title, files) {
   await page.goto("/");
   await page
@@ -49,13 +56,13 @@ test("merge real files without any network upload", async ({ page }) => {
   });
   const uploads = [];
   page.on("request", (request) => {
-    if (request.method() === "POST") uploads.push(request.url());
+    if (request.method() === "POST" && !request.url().endsWith("/api/auth/download")) uploads.push(request.url());
   });
   await choose(page, "Merge PDF", [
     { name: "a.pdf", mimeType: "application/pdf", buffer: await pdf(300) },
     { name: "b.pdf", mimeType: "application/pdf", buffer: await pdf(400) },
   ]);
-  await expect(page.getByText("No account required", { exact: true })).toBeVisible();
+  await expect(page.getByText("Log in to download", { exact: true })).toBeVisible();
   await expect(page.locator('input[type="email"], input[type="password"]')).toHaveCount(0);
   expect(await page.evaluate(() => [
     localStorage.getItem("ghost-files-auth-user"),

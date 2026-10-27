@@ -15,9 +15,9 @@ services:
       - key: CLIENT_ORIGIN
         sync: false
       - key: MONGODB_ENABLED
-        value: "false"
+        value: "true"
       - key: AUTH_ENABLED
-        value: "false"
+        value: "true"
       - key: MONGODB_URI
         sync: false
       - key: AUTH_JWT_SECRET

@@ -1,8 +1,11 @@
 # Authentication
 
 The previous login was a browser-only demo; it did not authenticate against MongoDB.
-Existing demo profiles are not migrated into real accounts. Tools/downloads remain
-available without signing in. Accounts do not store files or claim cross-device sync.
+Existing demo profiles are not migrated into real accounts. Local tools can process
+files without signing in, but downloading individual results or ZIP files requires
+a server-verified session. Server conversions require authentication before upload
+because their API response contains the generated file. Accounts do not store files
+or claim cross-device sync.
 
 ## Stored data
 
@@ -41,9 +44,8 @@ is enabled. Missing MongoDB/signing configuration causes startup to fail closed.
 
 On Render, after owner approval, set those variables on the active API service,
 using the actual MongoDB connection string and exact client origin
-`https://ghost-files-client-0fz5.onrender.com`. The Blueprint leaves accounts and
-MongoDB disabled until the owner approves transferring the connection credentials
-to Render. Enable both flags together after setting the connection string.
+`https://ghost-files-client-0fz5.onrender.com`. The Blueprint enables accounts and
+MongoDB after the owner's approval to transfer the credentials to Render.
 The connection string is declared as `sync: false`; existing services
 must receive its value through the service environment. A generated signing
 secret is declared with `generateValue: true`, preserving an existing value.
@@ -61,7 +63,15 @@ Restart after an Atlas seed-list change. Leave it empty to use native SRV DNS.
 
 Auth endpoints behind the client proxy: GET `/api/auth/status`, POST
 `/api/auth/signup`, POST `/api/auth/login`, GET `/api/auth/me`, POST
-`/api/auth/logout`. POST calls need `x-ghost-auth: 1`, JSON and an allowed Origin.
+`/api/auth/logout`, POST `/api/auth/download`. POST calls need `x-ghost-auth: 1`,
+JSON and an allowed Origin. The download endpoint checks the current session
+before the client releases a local Blob; it does not receive file contents.
+Expired/revoked sessions prompt for sign-in and preserve the pending result.
+
+Client-side local processing necessarily gives the browser access to output bytes;
+the local download gate is an application flow, not a way to prevent a user from
+extracting their own browser memory. Authentication middleware independently
+protects server conversion outputs from direct unauthenticated API requests.
 
 ## Verification and limits
 

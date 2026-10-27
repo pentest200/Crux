@@ -12,9 +12,12 @@ export async function authRequest(path, body) {
   });
   if (response.status === 204) return null;
   const data = await response.json().catch(() => ({}));
-  if (!response.ok)
-    throw new Error(
+  if (!response.ok) {
+    const error = new Error(
       data.error || "Account service is unavailable. Please try again.",
     );
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }

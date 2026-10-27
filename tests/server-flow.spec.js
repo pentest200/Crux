@@ -6,9 +6,14 @@ test("production password upload requires consent and returns a working PDF", as
   page,
 }) => {
   test.skip(
-    !process.env.BROWSER_BASE_URL,
-    "Run against Docker to use the real qpdf engine.",
+    !process.env.BROWSER_BASE_URL || !process.env.TEST_AUTH_EMAIL || !process.env.TEST_AUTH_PASSWORD,
+    "Requires a running qpdf API and an existing test account through TEST_AUTH_EMAIL/TEST_AUTH_PASSWORD.",
   );
+  const login = await page.request.post("/api/auth/login", {
+    headers: { Origin: new URL(process.env.BROWSER_BASE_URL).origin, "x-ghost-auth": "1" },
+    data: { email: process.env.TEST_AUTH_EMAIL, password: process.env.TEST_AUTH_PASSWORD },
+  });
+  expect(login.ok()).toBe(true);
   const original = await PDFDocument.create();
   original.addPage([300, 400]);
   const bytes = Buffer.from(await original.save());

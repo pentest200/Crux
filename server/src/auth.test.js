@@ -45,7 +45,11 @@ test(
     await Promise.all([User.init(), AuthSession.init()]);
     const app = express();
     app.use(express.json());
-    app.use("/auth", createAuthRouter(settings));
+    const authRouter = createAuthRouter(settings);
+    app.use("/auth", authRouter);
+    app.post("/protected", authRouter.requireSession, (_req, res) =>
+      res.status(204).end(),
+    );
     app.use((_error, _req, res, _next) =>
       res.status(500).json({ error: "Unexpected server error." }),
     );
@@ -134,6 +138,21 @@ test(
       ])
         assert.ok(setCookie.includes(flag), flag);
       const cookie = setCookie.split(";")[0];
+      assert.equal((await request("download", {})).status, 401);
+      assert.equal((await request("download", {}, cookie)).status, 204);
+      assert.equal(
+        (await fetch(origin + "/protected", { method: "POST" })).status,
+        401,
+      );
+      assert.equal(
+        (
+          await fetch(origin + "/protected", {
+            method: "POST",
+            headers: { Cookie: cookie },
+          })
+        ).status,
+        204,
+      );
       assert.equal((await request("me", undefined, cookie)).status, 200);
       assert.equal(
         (await request("me", undefined, cookie.slice(0, -1) + "!")).status,
@@ -180,6 +199,7 @@ test(
       const logout = await request("logout", {}, cookie);
       assert.equal(logout.status, 204);
       assert.equal((await request("me", undefined, cookie)).status, 401);
+      assert.equal((await request("download", {}, cookie)).status, 401);
       assert.equal(await AuthSession.countDocuments(), 0);
       const login = await request("login", { email: stored.email, password });
       assert.equal(login.status, 200);
