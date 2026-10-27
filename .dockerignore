@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+dist
+dist-mern
+.git
+.env
+test-results
+playwright-report
+tests
+*.log
+.ghost-files-*
