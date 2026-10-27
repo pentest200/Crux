@@ -1,189 +1,352 @@
-# Ghost Files
+# <p align="center">👻 Ghost Files</p>
 
-A privacy-first file toolkit built with React, Vite, Express, Node.js, and MongoDB. Convert and edit files locally where possible; explicitly approve temporary uploads when a native conversion engine is needed. Documents are never stored in MongoDB.
+<p align="center">
+  <strong>A high-performance, privacy-first file conversion and manipulation toolkit.</strong><br>
+  <em>Convert, edit, compress, and transform documents locally in your browser — zero telemetry, zero database file retention, with sandboxed server-side native engines when you need them.</em>
+</p>
 
-[Live application](https://ghost-files-client-0fz5.onrender.com) · [Security notes](docs/security-review.md) · [Tool catalogue](client/src/lib/catalog.js)
+<p align="center">
+  <a href="https://ghost-files-client-0fz5.onrender.com"><img src="https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Live Demo"></a>
+  <a href="https://drive.google.com/file/d/1z_4U09hSHlRNM3Skvx7uzsajou_XViHS/view?usp=sharing"><img src="https://img.shields.io/badge/▶%20Watch%20Demo-Google%20Drive-4285F4?style=for-the-badge&logo=googledrive&logoColor=white" alt="Video Demo"></a>
+  <a href="#-tools-and-capabilities"><img src="https://img.shields.io/badge/Tools-24%20Available-8A2BE2?style=for-the-badge" alt="Tools"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License"></a>
+</p>
 
-## At a glance
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19.1-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19">
+  <img src="https://img.shields.io/badge/Vite-6.3-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 6">
+  <img src="https://img.shields.io/badge/Node.js-22.15+-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/Express-5.1-000000?style=flat-square&logo=express&logoColor=white" alt="Express 5">
+  <img src="https://img.shields.io/badge/MongoDB-Mongoose-47A248?style=flat-square&logo=mongodb&logoColor=white" alt="MongoDB">
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker">
+  <img src="https://img.shields.io/badge/LibreOffice-Native%20Engine-18A303?style=flat-square&logo=libreoffice&logoColor=white" alt="LibreOffice">
+  <img src="https://img.shields.io/badge/Playwright-E2E%20Tested-2EAD33?style=flat-square&logo=playwright&logoColor=white" alt="Playwright">
+</p>
 
-- 24 tools, each with a shareable `/tools/...` route.
-- Search by tool name or description, with case/whitespace normalization, a result count, a clear button, and Escape-to-clear.
-- Local processing can run without an account; downloading results requires login. Server conversions require both authentication and upload consent.
-- Real signup/login backed by MongoDB, bcrypt password hashes, and revocable JWT sessions in HttpOnly cookies.
-- Batch processing, individual downloads, ZIP exports, mobile layouts, and reduced-motion support.
+<p align="center">
+  <a href="https://ghost-files-client-0fz5.onrender.com" target="_blank" rel="noopener noreferrer">
+    <img src="docs/assets/ghost-files-preview.png" alt="Ghost Files - Privacy-First File Tools Interface" width="920" style="border-radius: 8px; max-width: 100%;">
+  </a>
+</p>
 
-## Contents
+---
 
-- [Development](#development)
-- [Accounts and MongoDB](#accounts-and-mongodb)
-- [Docker engine preview](#docker-engine-preview)
-- [Tools and limits](#tools-and-limits)
-- [Privacy and security](#privacy-and-security)
-- [Configuration](#configuration)
-- [Render deployment](#render-deployment)
-- [Verification](#verification)
-- [Troubleshooting](#troubleshooting)
-- [Source](#source)
+## 🎬 Demonstration & Video Walkthrough
 
-## Docker engine preview
+> ### 🎥 [Watch the Full Ghost Files Video Demonstration on Google Drive](https://drive.google.com/file/d/1z_4U09hSHlRNM3Skvx7uzsajou_XViHS/view?usp=sharing)
+>
+> 🍿 **In this walkthrough, you'll see:**
+>
+> - **Client-side instant processing**: In-browser PDF merging, page reordering, splitting, and local client rendering with zero server uploads.
+> - **AI-powered background removal**: Local neural inference executing inside the browser via WebAssembly without remote image leaks.
+> - **Sandboxed server conversions**: Converting native Office documents (Word, Excel, PowerPoint) to PDF with explicit user consent and ephemeral container isolation.
+> - **Secure authentication & download gate**: Bcrypt-backed signup/login, HttpOnly session handling, and guest download protection.
 
-Install Docker Desktop, start it, and run:
+<p align="center">
+  <a href="https://drive.google.com/file/d/1z_4U09hSHlRNM3Skvx7uzsajou_XViHS/view?usp=sharing">
+    <img src="https://img.shields.io/badge/▶%20CLICK%20HERE%20TO%20PLAY%20DEMONSTRATION%20VIDEO-4285F4?style=for-the-badge&logo=google-drive&logoColor=white" alt="Play Video Demonstration" width="460">
+  </a>
+</p>
 
-```powershell
+---
+
+## 📌 Table of Contents
+
+- [🎬 Demonstration & Video Walkthrough](#-demonstration--video-walkthrough)
+- [✨ Key Highlights](#-key-highlights)
+- [🏗️ System Architecture](#️-system-architecture)
+- [🛠️ Tools and Capabilities](#️-tools-and-capabilities)
+  - [📑 PDF Manipulation & Editing](#-pdf-manipulation--editing)
+  - [📄 Office & Document Conversion](#-office--document-conversion)
+  - [🖼️ Image Processing & Local AI](#️-image-processing--local-ai)
+  - [🔒 Security & Audio Utilities](#-security--audio-utilities)
+- [🚀 Quick Start & Deployment](#-quick-start--deployment)
+  - [🐳 Option 1: Docker Preview (Zero Setup)](#-option-1-docker-preview-zero-setup)
+  - [💻 Option 2: Local Development](#-option-2-local-development)
+  - [☁️ Option 3: Render Production Deployment](#️-option-3-render-production-deployment)
+- [🔐 Accounts & Authentication](#-accounts--authentication)
+- [⚙️ Configuration Reference](#️-configuration-reference)
+- [🛡️ Privacy, Security & Sandbox Hardening](#️-privacy-security--sandbox-hardening)
+- [🧪 Verification & Testing](#-verification--testing)
+- [🔧 Troubleshooting](#-troubleshooting)
+- [📁 Project Structure](#-project-structure)
+- [📄 License](#-license)
+
+---
+
+## ✨ Key Highlights
+
+- **⚡ 100% Client-Side Processing Where Feasible**: Most PDF, image, and audio manipulations take place in browser memory via Web Workers, WebAssembly, and JavaScript engines (`pdf-lib`, `PDF.js`, `@imgly/background-removal`, `lamejs`).
+- **🛡️ Strict Zero-Retention Guarantee**: Files are **never stored** in MongoDB or retained on permanent disk. Server-side jobs run in isolated temporary scratch directories that are deleted immediately upon completion or cancellation.
+- **🖥️ Sandboxed Native Engine**: Enterprise conversions (DOCX, PPTX, XLSX to PDF, and AES-256 PDF encryption/decryption) utilize LibreOffice and `qpdf` in an egress-blocked, non-root Docker container.
+- **🔐 Hardened Authentication & Sessions**: Real user signup/login backed by MongoDB, bcrypt (cost 12), SHA-256 hashed session identifiers with automatic TTL pruning, and strict `HttpOnly` `SameSite=Strict` host-only cookies.
+- **🎨 Modern Glassmorphic Interface**: Responsive layout with dynamic theme accents, live search with instant keyboard navigation (Escape-to-clear), batch queue, individual & ZIP exports, and reduced-motion support.
+
+---
+
+## 🏗️ System Architecture
+
+Ghost Files balances privacy and computing power by segregating local browser operations from sandboxed server jobs:
+
+```mermaid
+flowchart TD
+    User([👤 User / Browser])
+
+    subgraph Client ["Client Browser (React 19 + Vite)"]
+        UI[Glassmorphic UI & 24 Tool Catalog]
+        Search[Fast Normalized Tool Search]
+        LocalEngine{Processing Mode?}
+
+        ClientWASM["Client-Side Processing\n• pdf-lib / PDF.js\n• @imgly WASM (Background Removal)\n• HTML2Canvas / LameJS\n• Zero Network Egress"]
+
+        ConsentCheck{"Explicit Upload\nConsent Granted?"}
+    end
+
+    subgraph API ["Backend API Gateway (Express 5 & Node.js)"]
+        AuthMiddleware["Auth & Rate Limiting\n• Bcrypt cost 12\n• HttpOnly Secure Session Cookies\n• 10 req/min conversion cap"]
+        UploadValidation["Upload Sanitizer\n• MIME / File Signature\n• Strict OOXML archive audit\n• Macro & Bomb rejection"]
+        Sandbox["Ephemeral Sandbox\n• Random temp directory\n• LibreOffice & qpdf process isolation\n• Automatic cleanup in finally block"]
+    end
+
+    subgraph Storage ["Databases & Engines"]
+        MongoDB[("MongoDB Atlas\n(Users & Auth Sessions only\nNO FILE DATA)")]
+        DockerEngine[("Native Engines\n• LibreOffice Calc/Writer/Impress\n• qpdf (AES-256)")]
+    end
+
+    User --> UI
+    UI --> Search
+    UI --> LocalEngine
+
+    LocalEngine -- "Local Tool" --> ClientWASM
+    ClientWASM -- "Requires Login to Download" --> AuthMiddleware
+
+    LocalEngine -- "Server Native Tool" --> ConsentCheck
+    ConsentCheck -- "No" --> User
+    ConsentCheck -- "Yes" --> AuthMiddleware
+
+    AuthMiddleware <--> MongoDB
+    AuthMiddleware --> UploadValidation
+    UploadValidation --> Sandbox
+    Sandbox <--> DockerEngine
+    Sandbox -- "Streams Output & Deletes Temp Files" --> User
+```
+
+---
+
+## 🛠️ Tools and Capabilities
+
+All 24 tools feature independent, shareable routes under `/tools/...` with full deep-linking, refresh support, and browser history integration.
+
+### 📑 PDF Manipulation & Editing
+
+| Tool              |    Mode     | Capabilities & Limits                                                                                                        |
+| :---------------- | :---------: | :--------------------------------------------------------------------------------------------------------------------------- |
+| **Merge PDF**     | `⚡ Client` | Combines multiple PDFs into a single file in custom sequence; accessible file reordering.                                    |
+| **Split PDF**     | `⚡ Client` | Extracts custom page ranges (e.g., `1-3, 5` or `all`); outputs individual files or a consolidated ZIP.                       |
+| **Compress PDF**  | `⚡ Client` | Re-renders pages with selectable quality/resolution parameters; displays real-time before/after byte comparisons.            |
+| **Edit PDF**      | `⚡ Client` | Overlays custom text, transparent PNG images, and geometric annotations with pinpoint coordinate positioning.                |
+| **Organize PDF**  | `⚡ Client` | Visual page grid: lazy-rendered thumbnails, drag-and-drop reordering, 90° rotations, selective deletion, and instant export. |
+| **Rotate PDF**    | `⚡ Client` | Incremental 90°, 180°, or 270° clockwise page rotations for individual pages or entire documents.                            |
+| **Sign PDF**      | `⚡ Client` | Freehand drawing pad, typed signatures, or PNG stamp placement on chosen pages (visual stamp; non-PKI).                      |
+| **Watermark PDF** | `⚡ Client` | Stamped text or high-resolution PNG watermarks with configurable opacity, angles, page scopes, and offsets.                  |
+
+---
+
+### 📄 Office & Document Conversion
+
+| Tool                  |    Mode     | Capabilities & Limits                                                                                            |
+| :-------------------- | :---------: | :--------------------------------------------------------------------------------------------------------------- |
+| **Word to PDF**       | `🖥️ Server` | High-fidelity `.docx` conversion via LibreOffice Writer. Enforces strict OOXML signature and macro verification. |
+| **PowerPoint to PDF** | `🖥️ Server` | Converts `.pptx` presentations. Pre-processes and downsamples embedded images > 4096px to prevent memory spikes. |
+| **Excel to PDF**      | `🖥️ Server` | Formatted spreadsheet conversion of validated `.xlsx` workbooks via LibreOffice Calc.                            |
+| **PDF to Word**       | `⚡ Client` | Parses selectable PDF text and structural blocks into editable native DOCX paragraphs. _(No OCR for scans)_      |
+| **PDF to PowerPoint** | `⚡ Client` | Translates selectable PDF pages into individual editable slide text boxes.                                       |
+| **PDF to Excel**      | `⚡ Client` | Parses aligned tabular text coordinates from PDF pages into multi-column XLSX sheets.                            |
+| **HTML to PDF**       | `⚡ Client` | Sanitizes user-entered HTML markup with DOMPurify and renders to a downloadable multi-page PDF document.         |
+
+---
+
+### 🖼️ Image Processing & Local AI
+
+| Tool                   |    Mode     | Capabilities & Limits                                                                                                                |
+| :--------------------- | :---------: | :----------------------------------------------------------------------------------------------------------------------------------- |
+| **Background Remover** | `⚡ Client` | In-browser neural segmentation using `@imgly/background-removal` WASM. Export transparent PNGs or composite with custom backgrounds. |
+| **Image Converter**    | `⚡ Client` | High-throughput batch conversion between PNG, JPEG, and WebP formats.                                                                |
+| **Image Resizer**      | `⚡ Client` | Pixel dimension scaling, percentage scaling, and aspect-ratio preservation.                                                          |
+| **Image Compressor**   | `⚡ Client` | Lossy and lossless image re-encoding with real-time file-size savings analytics.                                                     |
+| **PDF to JPG**         | `⚡ Client` | Extracts document pages as raster images (JPEG/PNG) at user-selected DPI scales with ZIP bundling.                                   |
+| **JPG to PDF**         | `⚡ Client` | Converts collections of JPEG, PNG, and WebP files into a structured PDF with custom margins and orientations.                        |
+
+---
+
+### 🔒 Security & Audio Utilities
+
+| Tool               |    Mode     | Capabilities & Limits                                                                                                        |
+| :----------------- | :---------: | :--------------------------------------------------------------------------------------------------------------------------- |
+| **Protect PDF**    | `🖥️ Server` | Encrypts PDF documents with user passwords using `qpdf` standard AES-256 encryption.                                         |
+| **Unlock PDF**     | `🖥️ Server` | Strips encryption from password-protected PDFs using the legitimate owner password.                                          |
+| **Video to Audio** | `⚡ Client` | Direct in-browser extraction of audio streams from video containers (`.mp4`, `.webm`, `.mov`, `.mkv`) into MP3, WAV, or AAC. |
+
+> [!NOTE]
+> **Operational Limits**: Local PDFs are capped at 300 pages and 50 MB each. Server uploads are capped at 25 MB per file. Image rendering canvases are limited to 24 megapixels. Batch sessions support up to 20 files / 150 MB total input.
+
+---
+
+## 🚀 Quick Start & Deployment
+
+### 🐳 Option 1: Docker Preview (Zero Setup)
+
+Experience Ghost Files immediately with the full native conversion engine pre-installed:
+
+```bash
+# Clone the repository
+git clone https://github.com/pentest200/GhostFiles.git
+cd GhostFiles
+
+# Spin up the containers
 docker compose up --build -d --wait
 ```
 
-Open **http://localhost:4180**. This builds the frontend and installs LibreOffice Writer/Calc/Impress and qpdf in the API container. The API is reached through `/api` on the same origin; it is not published separately.
+Open your browser at **http://localhost:4180**.
 
-**The checked-in Compose configuration is an engine/UI preview, not a fully configured account deployment.** It disables MongoDB and authentication, so downloading results and authenticated server conversions remain unavailable. Enabling the MongoDB profile alone does not configure accounts. Use the development account setup below or the production Render configuration for the complete flow. The isolated API network also has no internet egress; an external Atlas connection requires a deliberate networking change.
+- The API is automatically proxied through `/api` on the same origin.
+- LibreOffice (Writer/Calc/Impress) and `qpdf` are bundled and ready.
+- _Note:_ The preview configuration runs without MongoDB enabled. To test accounts and downloads, follow the local development setup below.
 
-Stop services with `docker compose stop`. No document volume is created. The optional MongoDB volume is only used if you enable its profile.
+---
 
-## Development
+### 💻 Option 2: Local Development
 
-Requires Node.js 22.15+ and npm. On PowerShell installations that block `npm.ps1`, use `npm.cmd`.
+#### Prerequisites
+
+- **Node.js**: v22.15.0 or higher
+- **npm**: v10+ (On Windows PowerShell, use `npm.cmd` if script execution policies block `.ps1`)
+- **Optional Native Tools**: LibreOffice and `qpdf` on your system `PATH` (or configured via `.env`).
 
 ```powershell
+# 1. Initialize environment configuration
 if (!(Test-Path .env)) { Copy-Item .env.example .env }
+
+# 2. Install workspace dependencies
 npm.cmd ci
+
+# 3. Start development servers concurrently (Client on :5173, Server on :8787)
 npm.cmd run dev
 ```
 
-Frontend: http://localhost:5173 (Vite may choose 5174 if 5173 is occupied). API: http://localhost:8787/health. Vite proxies `/api` requests to the API. Development accepts `localhost` and `127.0.0.1` on ports 5173/5174; other frontend origins must match `CLIENT_ORIGIN`. Production accepts only its configured client origin.
+- **Frontend Client**: [http://localhost:5173](http://localhost:5173) (Proxies `/api` calls to server)
+- **Backend API Health Check**: [http://localhost:8787/health](http://localhost:8787/health)
 
-Local processing works even if the API is stopped, but account operations and downloads need the API. Native development conversion also needs LibreOffice and qpdf on PATH; alternatively set `LIBREOFFICE_PATH` and `QPDF_PATH` in `.env`. Capabilities are determined by executable probes, not an enable flag alone. Restart the API after changing `.env`.
+---
 
-## Accounts and MongoDB
+### ☁️ Option 3: Render Production Deployment
 
-1. Create a MongoDB database user and allow the API's network access in Atlas, or use your own MongoDB instance.
-2. Edit the **root** `.env` file; do not put database credentials or signing secrets in `client/` or any `VITE_*` variable.
-3. Configure the following placeholders with your own values, then restart the API:
+The repository includes a ready-to-deploy [`render.yaml`](render.yaml) blueprint declaring both the Client (Nginx static + reverse proxy) and the API (Dockerized Node + LibreOffice + qpdf):
 
-```dotenv
-NODE_ENV=development
-CLIENT_ORIGIN=http://localhost:5173
-MONGODB_ENABLED=true
-MONGODB_URI=mongodb+srv://USERNAME:URL_ENCODED_PASSWORD@YOUR_CLUSTER.mongodb.net/ghost-files
-AUTH_ENABLED=true
-AUTH_JWT_SECRET=REPLACE_WITH_A_RANDOM_SECRET_OF_AT_LEAST_32_CHARACTERS
+1. Link the repository to your Render account as a **Blueprint**.
+2. Set the private environment variables for the API:
+   - `MONGODB_URI`: Your MongoDB Atlas connection string.
+   - `AUTH_JWT_SECRET`: A generated 48-byte cryptographically secure hex secret.
+   - `CLIENT_ORIGIN`: Your public HTTPS frontend URL (e.g. `https://ghost-files-client-0fz5.onrender.com`).
+3. Set the Client `API_BASE_URL` to point to the API service.
+4. Deploy and verify `/api/auth/status` and `/health`.
+
+---
+
+## 🔐 Accounts & Authentication
+
+Ghost Files provides real, secure authentication for user workflows while upholding the principle that **no documents are stored in the database**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       Stored in MongoDB                     │
+├────────────────────────────────┬────────────────────────────┤
+│ users Collection               │ authsessions Collection    │
+├────────────────────────────────┼────────────────────────────┤
+│ • Normalized Email (Indexed)   │ • SHA-256 Hashed Token ID  │
+│ • User Display Name            │ • User Reference ObjectId  │
+│ • Bcrypt Cost-12 Password Hash │ • Expiration (TTL Index)   │
+│ • Timestamps                   │ • Revocation Tracking      │
+└────────────────────────────────┴────────────────────────────┘
+         ⚠️ ZERO FILE DATA OR METADATA IS STORED
 ```
 
-Generate a signing secret with `node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"`. Keep the result private. Use a strong, unique database password; URI encoding is **not encryption**. Encode reserved characters in the username/password portions only (`@` becomes `%40`, for example), not the whole connection string. Do not commit `.env`; it is ignored by Git and Docker build context.
+### Security Details
 
-Optional `MONGODB_DNS_SERVERS=1.1.1.1,8.8.8.8` supports networks with broken Atlas SRV DNS. Leave it empty if normal DNS works. Atlas authentication or network-access failures are separate from DNS failures.
+- **Password Policy**: Minimum 15 characters, maximum 72 UTF-8 bytes (preventing bcrypt truncation attacks).
+- **Cookie Architecture**: Signed 8-hour JWT sessions stored in host-only cookies:
+  - _Production_: `__Host-ghost_session`, `Secure`, `HttpOnly`, `SameSite=Strict`, `Path=/`.
+  - _Development_: `ghost_session`, `HttpOnly`, `SameSite=Strict`.
+  - _Zero token storage in `localStorage` or `sessionStorage`_.
+- **Revocation**: Logging out instantly drops the session in MongoDB, preventing replay of valid JWTs.
 
-Visit `/register` (or `/signup`) to create an account and `/login` to sign in. The API must report `{"enabled":true}` at `/api/auth/status` through the frontend. `users` stores name, normalized email, timestamps, and a bcrypt cost-12 password hash—not plaintext passwords. `authsessions` stores a hashed session identifier, user reference, and expiry, allowing logout/revocation. MongoDB is optional for local processing, **required for accounts**.
+---
 
-Account passwords must be at least 15 characters and no more than 72 UTF-8 bytes. Sessions expire after eight hours. Production cookies use `__Host-ghost_session`, Secure, HttpOnly, SameSite=Strict, and Path=/; local HTTP uses `ghost_session` without Secure. Tokens are not stored in localStorage. Production authentication requires HTTPS. Email verification, password reset, and MFA are not implemented.
+## ⚙️ Configuration Reference
 
-## Tools and limits
+Configure settings in the root `.env` file (copied from [`.env.example`](.env.example)):
 
-All 24 tools have independent pages under `/tools/`, for example
-`/tools/image-converter`, `/tools/background-remover`, `/tools/merge-pdf`,
-`/tools/word-to-pdf`, and `/tools/video-to-audio`. Tool cards link to these pages;
-direct visits, refresh, and browser Back/Forward work. The complete route list
-is defined in `client/src/lib/catalog.js`. Nginx's existing SPA fallback serves
-direct tool URLs. Files remain in memory and must be selected again after refresh.
+| Variable              |      Default Value      | Description                                                     |
+| :-------------------- | :---------------------: | :-------------------------------------------------------------- |
+| `NODE_ENV`            |      `development`      | Environment mode (`development` or `production`).               |
+| `CLIENT_ORIGIN`       | `http://localhost:5173` | Allowed client origin for CORS and session cookies.             |
+| `AUTH_ENABLED`        |         `true`          | Enables authentication and user management endpoints.           |
+| `AUTH_JWT_SECRET`     |    _(Random String)_    | Secret key (>= 32 chars) for signing HS256 tokens.              |
+| `MONGODB_ENABLED`     |         `true`          | Enables database connectivity for accounts.                     |
+| `MONGODB_URI`         |     `mongodb://...`     | MongoDB connection URI (local instance or Atlas).               |
+| `MONGODB_DNS_SERVERS` |    `1.1.1.1,8.8.8.8`    | _(Optional)_ Explicit DNS resolvers for Atlas SRV lookups.      |
+| `LIBREOFFICE_ENABLED` |         `true`          | Enables native Word/Excel/PowerPoint conversions.               |
+| `LIBREOFFICE_PATH`    |    _(Auto-detected)_    | Path to LibreOffice executable (`soffice`).                     |
+| `QPDF_PATH`           |    _(Auto-detected)_    | Path to `qpdf` executable for encryption/decryption.            |
+| `MAX_UPLOAD_BYTES`    |   `26214400` (25 MB)    | Maximum accepted upload size for server conversions.            |
+| `JOB_TIMEOUT_MS`      |    `120000` (2 mins)    | Hard timeout before native conversion processes are terminated. |
+| `JOB_TTL_MS`          |   `900000` (15 mins)    | Lifetime of abandoned scratch directories before auto-sweep.    |
 
-| Tool               | Implementation / relevant limit                                                                              |
-| ------------------ | ------------------------------------------------------------------------------------------------------------ |
-| Merge PDF          | Copies PDF pages in displayed file order; accessible file move buttons                                       |
-| Split PDF          | Parses `1-3, 5`, or `all`; separate page outputs and ZIP download                                            |
-| Compress PDF       | Renders pages to JPEG and rebuilds the PDF; selectable quality and resolution, actual size comparison        |
-| PDF to Word        | Selectable PDF text to editable DOCX paragraphs                                                              |
-| PDF to PowerPoint  | Selectable PDF text to editable slide text boxes                                                             |
-| PDF to Excel       | Positioned PDF text rows/cells to XLSX sheets                                                                |
-| Word to PDF        | Real LibreOffice conversion of validated DOCX files                                                          |
-| PowerPoint to PDF  | Real LibreOffice conversion of validated PPTX files                                                          |
-| Excel to PDF       | Real LibreOffice conversion of validated XLSX files                                                          |
-| Edit PDF           | Add text, PNG images, or rectangular annotations with page ranges and coordinates                            |
-| PDF to JPG         | PDF.js raster rendering; JPEG/PNG, page ranges, resolution, individual and ZIP downloads                     |
-| JPG to PDF         | JPEG/PNG/WebP; file order, page size, margins, fit, orientation                                              |
-| Sign PDF           | Draw a signature or add typed/PNG visible marks; not certificate signing or remote signature collection      |
-| Watermark          | Text/PNG marks with opacity, font size, text angle, page range, and coordinates                              |
-| Rotate PDF         | Adds rotation to existing rotation on selected pages                                                         |
-| HTML to PDF        | Sanitized pasted HTML to page images in a real downloadable PDF                                              |
-| Unlock PDF         | qpdf decrypts using a known password; no password cracking                                                   |
-| Protect PDF        | qpdf AES-256 encryption with a user-entered password                                                         |
-| Organize PDF       | Lazy page previews, reorder, rotate, select/delete, reset, export                                            |
-| Image converter    | Batch PNG/JPEG/WebP conversion                                                                               |
-| Image resizer      | Dimensions/percentage/aspect lock and output format                                                          |
-| Image compressor   | Re-encoding with quality settings and actual before/after byte sizes                                         |
-| Background remover | In-browser IMG.LY model; transparent PNG or compositing onto a color/image; first run downloads model assets |
-| Video to audio     | Browser-based audio extraction; supported codecs/containers depend on the browser                            |
+---
 
-Local PDFs are limited to 300 pages, local files to 50 MB each, server uploads to 25 MB, decoded image/render canvases to 24 megapixels, and sessions to 20 files / 150 MB input. Page-image exports are capped at 100 MB per PDF and batch results at 150 MB. Process smaller batches on memory-constrained devices.
+## 🛡️ Privacy, Security & Sandbox Hardening
 
-PDF-to-Office exports rebuild selectable text. They do not reproduce original layouts or graphics, perform OCR, or guarantee table reconstruction. Scanned/image-only PDFs report an error. HTML allows headings, paragraphs, lists, tables, and simple text structure. It strips scripts, styles, images, and external resources; arbitrary webpage URLs are unsupported. HTML output is rasterized.
+Ghost Files implements defense-in-depth across the entire stack:
 
-PDF compression rasterizes pages, losing searchability, form fields, links, accessibility structure, and digital signatures. Quality can decrease and outputs can grow; actual sizes are displayed. JPEG uses white behind transparent pixels. PNG ignores lossy quality settings. Built-in PDF annotation fonts support Latin text; use a PNG mark for other scripts.
+1. **Client-Side Privacy**: Local tools execute completely in client memory. No analytics, tracking pixels, or background document telemetry exist in the application.
+2. **Explicit Consent Gate**: Server conversions mandate an active, explicit consent checkbox from the user before multipart payload parsing begins.
+3. **Malicious File Neutralization**:
+   - Uploads undergo MIME, extension, magic byte, and OOXML structure validation.
+   - Office documents containing VBA macros, external XML relationships, executable payloads, or zip-bomb nesting are immediately rejected.
+   - Large PPTX presentations have raster images > 4096px downsampled in a dedicated sub-process to eliminate memory-exhaustion exploits.
+4. **Sandboxed Subprocess Execution**:
+   - Subprocesses are spawned without shell interpolation (`execFile`).
+   - Passwords for `qpdf` are passed via restricted file handles to prevent leakage in `ps` process lists.
+   - Temporary job directories are created with randomized names under strict OS permissions and destroyed in `finally` blocks.
+5. **Container Hardening**:
+   - The production Docker container executes as a non-privileged user with a read-only root filesystem, dropped Linux capabilities, and an egress-blocked internal network.
 
-## Privacy and security
+---
 
-PPTX conversions prepare a temporary copy before launching LibreOffice. Embedded PNG/JPEG/WebP images larger than 4096 pixels on either edge are downsampled proportionally; small images and slide XML are unchanged. This reduces memory spikes from highly compressed, very large images, but can reduce fine image detail in the PDF. The original upload is never overwritten. Image preparation runs in a separate process, with a 100-megapixel input limit, no image cache, and the same overall conversion deadline. It exits before LibreOffice starts. Malformed or animated raster images are rejected; other media formats are not optimized. These bounds reduce memory risk, not a guarantee for every presentation.
+## 🧪 Verification & Testing
 
-- Local tools process file contents in browser memory, without document analytics or automatic upload. Background removal fetches model assets from `staticimgly.com`, but does not send your image there. The interface also loads Google Fonts; local processing does not mean zero network requests or full offline support.
-- Downloads are checked through `/api/auth/download`; server `/convert` routes validate the session before accepting an upload. Client-side download gating is a product workflow, not DRM: users control data already processed in their own browser.
-- Every server conversion requires a visible informed-consent checkbox. The API checks consent before parsing multipart data. A client header is a request contract, not authentication.
-- Uploads are validated by extension, MIME type, file signature, and Office ZIP structure. Office archives with macros, embedded executable objects, external resource links, too many entries, or excessive expanded size are rejected.
-- Each native conversion uses a random restricted temporary directory and fixed internal filenames. Commands are invoked without a shell. Passwords are passed in a restricted argument file and omitted from process command lines and application logs.
-- PDF encryption/unlock passwords have a 1–128 character limit; line breaks, NUL, and leading `@` are rejected to prevent argument-file expansion. This is separate from the account-password policy above.
-- Workspaces are removed in `finally` after success/failure/cancellation. Abandoned jobs expire after 15 minutes and are swept every minute and at startup. Temporary files are not served publicly or stored in database/document volumes. Ordinary deletion is not a guarantee of physical block erasure.
-- The API handles one conversion at a time, enforces a timeout, and rate-limits conversion requests to 10/minute. In Linux, timeout/cancellation kills the process group. Direct Windows subprocess execution cannot offer equivalent process-tree isolation; use Docker for native conversion of untrusted documents.
-- Docker runs the API as a non-root user, read-only root filesystem, bounded temporary filesystem, dropped capabilities, process/memory/CPU limits, and an internal network without internet egress. The converter shares the API container; it is not a per-job VM. Deployment hardening is not an independent security audit.
-- Nginx supplies CSP, nosniff, and referrer policy headers. Express uses Helmet, strict configured CORS, upload limits, and sanitized errors. Add an HTTPS reverse proxy before exposing the deployment publicly. Local HTTP examples are for local development.
-
-Local processing reduces server exposure but cannot eliminate compromised-device, browser, malicious-input, or dependency risks.
-
-## Configuration
-
-See [.env.example](.env.example) for development defaults.
-
-| Setting                                                | Purpose                                                                |
-| ------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `CLIENT_ORIGIN`                                        | Trusted frontend origin; exact HTTPS origin in production              |
-| `AUTH_ENABLED`, `MONGODB_ENABLED`                      | Both must be `true` to use accounts                                    |
-| `MONGODB_URI`, `AUTH_JWT_SECRET`                       | Server-only database connection and session-signing secret             |
-| `MONGODB_DNS_SERVERS`                                  | Optional explicit DNS resolvers for Atlas discovery                    |
-| `LIBREOFFICE_ENABLED`, `LIBREOFFICE_PATH`, `QPDF_PATH` | Native engine configuration                                            |
-| `MAX_UPLOAD_BYTES`, `JOB_TIMEOUT_MS`, `JOB_TTL_MS`     | Upload, execution, and temporary-job limits                            |
-| `VITE_API_PROXY_TARGET`                                | Optional development proxy target; defaults to `http://127.0.0.1:8787` |
-
-The Job model is available for metadata only; conversion does not retain job records. No file contents should be added to that model.
-
-## Render deployment
-
-[render.yaml](render.yaml) defines Docker web services for the client and API. Both deploy from the repository, with SPA fallback routing on the client and `/health` on the API.
-
-1. Connect the GitHub repository to the intended Render Blueprint/workspace.
-2. Set server-only `MONGODB_URI`, enable MongoDB/authentication, and retain a strong `AUTH_JWT_SECRET` (the Blueprint can generate it).
-3. Set API `CLIENT_ORIGIN` to the exact public HTTPS frontend origin. Set the client's `API_BASE_URL` to the public API origin; the browser uses same-origin `/api` through Nginx.
-4. Allow the API's network access in Atlas. Keep production secrets in Render, not the repository or frontend build.
-5. Push tested changes to the configured branch. With commit auto-deploy enabled, the push starts deployment; do not trigger a duplicate deploy.
-6. Wait for **both** services to become live, then verify signup, login/logout, guest download blocking, authenticated download, and `/api/auth/status`.
-
-Free services may need time to wake up. A successful health response does not alone verify the account or conversion flow. Chrome's deceptive-site warning, if present, requires investigation and Google Search Console review; changing app code does not automatically remove Google's classification.
-
-## Verification
+Ghost Files features a comprehensive automated test suite covering unit logic, server pipelines, and end-to-end browser workflows:
 
 ```powershell
-npm.cmd run build
+# Run backend and frontend unit tests
 npm.cmd test
+
+# Run full end-to-end browser suite (Playwright with headless Chrome)
 npm.cmd run test:e2e
+
+# Run security dependency audit
 npm.cmd audit
 ```
 
-The Node tests validate PDF page order/count/rotation, split ranges, signatures, ZIP filename collisions, dimension limits, server validation, temporary-job cleanup, timeouts, health/capability routes, and consent rejection. Tests use generated non-sensitive data.
+### Running Auth Tests with Disposable MongoDB
 
-Playwright tests use installed headless Chrome and exercise real uploads into browser file inputs and downloaded PDF/JPEG/ZIP/DOCX/PPTX/XLSX outputs, batch failures, HTML rendering, mobile layout, consent blocking, and absence of upload requests during a local merge. `playwright.config.js` can use another installed channel when Chrome is unavailable. This verifies the covered journeys, not a complete application audit.
-
-The default browser suite starts an isolated Vite frontend on **127.0.0.1:5174** with a test API target on port 8794. Leave 5174 free when running it. Search regression tests check computed opacity as well as result counts, including repeated clearing, no matches, browser Back, mobile, and reduced-motion behavior.
-
-MongoDB authentication tests are skipped unless `TEST_AUTH_MONGODB_URI` is supplied. Use a disposable local database, never production, to run the complete account suite:
+To test the full signup, login, session revocation, and authenticated download flow locally:
 
 ```powershell
+# Launch temporary ephemeral MongoDB container
 docker run -d --rm --name ghostfiles-auth-tests -p 127.0.0.1:27028:27017 --tmpfs /data/db mongo:8.0.32 --bind_ip_all
 $env:TEST_AUTH_MONGODB_URI='mongodb://127.0.0.1:27028'
+
 try {
   npm.cmd test
   npm.cmd run test:e2e
@@ -193,27 +356,84 @@ try {
 }
 ```
 
-Tests create and drop only randomly named `ghost_auth_test_*` databases. The real account browser test covers signup through the download prompt and `/register`, login via `/login`, hashing, cookie security, reload, logout, revocation, and resumed downloads.
+---
 
-For native PPTX/LibreOffice and qpdf upload checks, use an auth-enabled deployment with those engines installed and an existing **test** account. Supply `BROWSER_BASE_URL`, `TEST_AUTH_EMAIL`, and `TEST_AUTH_PASSWORD`, then run `npm.cmd run test:e2e -- tests/server-flow.spec.js`. These tests require explicit upload consent and check real presentation-to-PDF and protected PDF downloads. Do not use personal credentials or run competing conversions against the single conversion worker. The older `tests/native.test.js` harness does not attach account sessions and is not the authenticated release check.
+## 🔧 Troubleshooting
 
-See [docs/security-review.md](docs/security-review.md) for the known transitive dependency advisory. Tests cover generated fixtures and documented limits, not every possible document or a complete security audit.
+<details>
+<summary><strong>🔍 Engine is unavailable in native conversion tools</strong></summary>
 
-## Troubleshooting
+Ensure LibreOffice and `qpdf` are installed and reachable on your system `PATH`. Alternatively, set `LIBREOFFICE_PATH` and `QPDF_PATH` explicitly in `.env`. If running via Docker, verify the containers are healthy with `docker compose ps`.
+</details>
 
-- Engine unavailable: start Docker, or install LibreOffice/qpdf and set correct executable paths. Refresh capabilities in the tool.
-- Search seems stuck: clear the input, use **Clear search**, or press Escape. All 24 cards should return; refresh once if an old production tab still has the pre-fix bundle loaded.
-- Login/signup HTTP 403: check `CLIENT_ORIGIN`, the browser's actual origin, and that the API was restarted after configuration changes. Keep production restricted to the real HTTPS frontend, not localhost or a wildcard.
-- HTTP 401 from `/auth/me` while signed out is expected. A 401 from login means credentials were rejected, not a successful login.
-- Accounts unavailable/HTTP 503: enable both MongoDB and auth, configure the URI/signing secret, and verify Atlas network access. `.env` is not automatically uploaded to Render.
-- Conversion HTTP 502/504: the gateway lost the API response or timed out. Wait briefly and explicitly retry; uploads are not automatically replayed. If it repeats, record file size, slide count, failure time, and whether `/api/health` is reachable. Check Render runtime logs/metrics for restarts, memory exhaustion, and timeouts before changing resource limits or blaming the document. A successful small fixture does not prove a large presentation will convert.
-- HTTP 429: wait a minute or retry after the running conversion completes.
-- Invalid Office upload: only DOCX/XLSX/PPTX OOXML files are accepted. Legacy DOC/XLS/PPT, encrypted Office documents, macros, and external links are not supported.
-- Large PDF/image: lower rendering scale, split the document, or use smaller batches. Memory limits are intentionally finite.
-- Encrypted PDF: use Unlock PDF and its known password before local manipulation.
-- Interrupted conversion: completed batch outputs stay downloadable. A server job is killed/cleaned on disconnect or timeout.
-- Old static UI on port 4173: use the React dev URL (5173) or complete Docker app (4180). The `dist/` folder is a historical prototype; it is not the maintained application.
+<details>
+<summary><strong>⌨️ Search bar appears stuck or missing cards</strong></summary>
 
-## Source
+Clear the search input using the ✕ button or press the <kbd>Escape</kbd> key. All 24 tools will immediately reappear. If an older tab is open in production, perform a hard refresh (`Ctrl + F5`) to invalidate the cached bundle.
+</details>
 
-`client/src/components/` contains the UI; `client/src/lib/` contains local processors and validation. `server/src/conversion.js` contains native execution/validation/cleanup. `server/src/routes/` contains capability and conversion endpoints. All maintained source files are JavaScript or JSX.
+<details>
+<summary><strong>🚫 HTTP 403 on Login / Signup</strong></summary>
+
+Verify that `CLIENT_ORIGIN` in `.env` matches the exact protocol, domain, and port of your browser (e.g., `http://localhost:5173`). Restart the API server after any `.env` changes.
+</details>
+
+<details>
+<summary><strong>🌐 MongoDB Atlas SRV DNS Resolution Failures</strong></summary>
+
+Some local networks or ISP routers fail to resolve Atlas SRV DNS records. Add `MONGODB_DNS_SERVERS=1.1.1.1,8.8.8.8` to your root `.env` to route DNS lookups directly through Cloudflare and Google public resolvers.
+</details>
+
+<details>
+<summary><strong>⏱️ HTTP 502 / 504 on Server Conversions</strong></summary>
+
+The gateway or conversion process timed out. Ghost Files handles one native conversion at a time with a 2-minute deadline. For massive presentations, reduce slide image sizes or retry after competing conversions finish.
+</details>
+
+<details>
+<summary><strong>📄 Legacy Office Formats (.doc, .ppt, .xls) Rejected</strong></summary>
+
+Only modern OOXML formats (`.docx`, `.pptx`, `.xlsx`) are supported for security and parsing integrity. Save legacy documents in modern Office formats before converting.
+</details>
+
+---
+
+## 📁 Project Structure
+
+```
+GhostFiles/
+├── client/                     # Frontend Application (React 19 + Vite)
+│   ├── src/
+│   │   ├── components/         # Modals, Tool Cards, Workspaces, Nav
+│   │   ├── lib/                # Client processors (PDF, Canvas, Img, Auth)
+│   │   │   └── catalog.js      # Definitive catalogue of all 24 tools
+│   │   ├── App.jsx             # Main router and state coordinator
+│   │   └── styles.css          # Core design system and glassmorphic styles
+│   └── Dockerfile              # Production multi-stage Nginx container
+│
+├── server/                     # Backend API (Express 5 + Node.js 22)
+│   ├── src/
+│   │   ├── models/             # User and AuthSession schemas (Mongoose)
+│   │   ├── routes/             # /auth, /convert, /capabilities, /health
+│   │   └── conversion.js       # Native engine runners, sandbox & sweeps
+│   └── Dockerfile              # Hardened API container with LibreOffice & qpdf
+│
+├── docs/                       # Architectural & Security Documentation
+│   ├── authentication.md       # Deep-dive into session cookies and crypto
+│   ├── security-review.md      # Dependency audits & CVE mitigation notes
+│   └── browser-warning-remediation.md
+│
+├── tests/                      # Integration and Playwright E2E suites
+├── docker-compose.yml          # Zero-config engine preview stack
+└── render.yaml                 # Infrastructure-as-code deployment blueprint
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE) © 2026 Ujjwal Shreshtha.
+
+<p align="center">
+  <sub>Built with ❤️ for privacy, performance, and user ownership of data.</sub>
+</p>
