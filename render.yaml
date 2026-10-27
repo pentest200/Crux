@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: ghost-files-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: MONGODB_ENABLED
+        value: "false"
+      - key: LIBREOFFICE_ENABLED
+        value: "true"
+      - key: JOB_TIMEOUT_MS
+        value: "60000"
+      - key: JOB_TTL_MS
+        value: "900000"
+
+  - type: web
+    name: ghost-files-client
+    runtime: docker
+    plan: free
+    dockerfilePath: ./client/Dockerfile
+    dockerContext: .
+    healthCheckPath: /
+    autoDeployTrigger: commit
+    envVars:
+      - key: API_HOSTPORT
+        fromService:
+          type: web
+          name: ghost-files-api
+          property: hostport
