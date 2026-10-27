@@ -23,15 +23,13 @@ test("production PPTX upload converts slides into a downloadable PDF", async ({
   expect(login.ok()).toBe(true);
   const deck = new PptxGenJS();
   for (let index = 1; index <= 2; index++) {
-    deck
-      .addSlide()
-      .addText(`PPTX regression slide ${index}`, {
-        x: 1,
-        y: 1,
-        w: 8,
-        h: 1,
-        fontSize: 24,
-      });
+    deck.addSlide().addText(`PPTX regression slide ${index}`, {
+      x: 1,
+      y: 1,
+      w: 8,
+      h: 1,
+      fontSize: 24,
+    });
   }
   await page.goto("/tools/powerpoint-to-pdf");
   await page
@@ -90,7 +88,12 @@ test("production password upload requires consent and returns a working PDF", as
   const bytes = Buffer.from(await original.save());
   const uploaded = [];
   page.on("request", (request) => {
-    if (request.method() === "POST") uploaded.push(request);
+    // Session/download authorization POSTs do not upload document contents.
+    if (
+      request.method() === "POST" &&
+      new URL(request.url()).pathname.startsWith("/api/convert/")
+    )
+      uploaded.push(request);
   });
   async function choose(title, file) {
     await page.goto("/");
