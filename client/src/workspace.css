@@ -25,6 +25,7 @@ select:focus-visible {
 }
 .nav-buttons {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 .mobile-toggle {

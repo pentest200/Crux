@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
+import { isAllowedOrigin } from "./origin.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -99,7 +100,7 @@ export function createAuthRouter(settings, store = mongoAuthStore) {
   router.use((req, res, next) => {
     if (req.method === "GET") return next();
     if (
-      req.get("Origin") !== new URL(settings.CLIENT_ORIGIN).origin ||
+      !isAllowedOrigin(settings, req.get("Origin")) ||
       req.get("x-ghost-auth") !== "1" ||
       !req.is("application/json")
     ) {

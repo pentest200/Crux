@@ -25,12 +25,12 @@ test("real account signup, reload, logout, and password verification", async ({
       "/auth",
       createAuthRouter({
         AUTH_ENABLED: "true",
-        NODE_ENV: "test",
-        CLIENT_ORIGIN: "http://127.0.0.1:5173",
+        NODE_ENV: "development",
+        CLIENT_ORIGIN: "http://localhost:5173",
         AUTH_JWT_SECRET: randomBytes(48).toString("hex"),
       }),
     );
-    server = app.listen(8787, "127.0.0.1");
+    server = app.listen(8794, "127.0.0.1");
     await new Promise((resolve, reject) => {
       server.once("listening", resolve);
       server.once("error", reject);
@@ -42,11 +42,14 @@ test("real account signup, reload, logout, and password verification", async ({
     await page
       .locator('input[type="file"]')
       .first()
-      .setInputFiles([{
-        name: "sample.pdf",
-        mimeType: "application/pdf",
-        buffer: bytes,
-      }, { name: "second.pdf", mimeType: "application/pdf", buffer: bytes }]);
+      .setInputFiles([
+        {
+          name: "sample.pdf",
+          mimeType: "application/pdf",
+          buffer: bytes,
+        },
+        { name: "second.pdf", mimeType: "application/pdf", buffer: bytes },
+      ]);
     await page
       .getByRole("button", { name: "Process locally", exact: true })
       .click();
@@ -110,34 +113,40 @@ test("real account signup, reload, logout, and password verification", async ({
     ).toBeVisible();
     await page.getByRole("button", { name: "Log out", exact: true }).click();
     await expect(
-      page.getByRole("button", { name: "Log in", exact: true }),
+      page.getByRole("link", { name: "Log in", exact: true }),
     ).toBeVisible();
     expect(await AuthSession.countDocuments()).toBe(0);
-    await page.getByRole("button", { name: "Log in", exact: true }).click();
-    await dialog
-      .getByLabel("Email", { exact: true })
+    await page.getByRole("link", { name: "Log in", exact: true }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    const form = page.locator("form.auth-form");
+    await form
+      .getByLabel("Email address", { exact: true })
       .fill("browser@example.test");
-    await dialog
+    await form
       .getByLabel("Password", { exact: true })
       .fill("the wrong password long enough");
-    await dialog.getByRole("button", { name: "Log in", exact: true }).click();
-    await expect(dialog.getByRole("alert")).toHaveText(
+    await form.getByRole("button", { name: /Log in/ }).click();
+    await expect(form.getByRole("alert")).toHaveText(
       "Email or password is incorrect.",
     );
-    await dialog.getByLabel("Password", { exact: true }).fill(password);
-    await dialog.getByRole("button", { name: "Log in", exact: true }).click();
-    await expect(dialog).toHaveCount(0);
+    await form.getByLabel("Password", { exact: true }).fill(password);
+    await form.getByRole("button", { name: /Log in/ }).click();
+    await expect(page).toHaveURL(/\/$/);
     await expect(
       page.getByText("Mongo Test User", { exact: true }),
     ).toBeVisible();
+    await page.goto("/tools/merge-pdf");
     await page
       .locator('input[type="file"]')
       .first()
-      .setInputFiles([{
-        name: "sample.pdf",
-        mimeType: "application/pdf",
-        buffer: bytes,
-      }, { name: "second.pdf", mimeType: "application/pdf", buffer: bytes }]);
+      .setInputFiles([
+        {
+          name: "sample.pdf",
+          mimeType: "application/pdf",
+          buffer: bytes,
+        },
+        { name: "second.pdf", mimeType: "application/pdf", buffer: bytes },
+      ]);
     await page
       .getByRole("button", { name: "Process locally", exact: true })
       .click();
@@ -151,18 +160,43 @@ test("real account signup, reload, logout, and password verification", async ({
     await expect(dialog).toHaveCount(0);
     expect(downloads).toHaveLength(1);
     await page.goto("/tools/split-pdf");
-    await page.locator('input[type="file"]').first().setInputFiles([
-      { name: "first.pdf", mimeType: "application/pdf", buffer: bytes },
-      { name: "second.pdf", mimeType: "application/pdf", buffer: bytes },
-    ]);
-    await page.getByRole("button", { name: "Process locally", exact: true }).click();
-    await expect(page.getByRole("status")).toContainText("2 output file(s) ready");
+    await page
+      .locator('input[type="file"]')
+      .first()
+      .setInputFiles([
+        { name: "first.pdf", mimeType: "application/pdf", buffer: bytes },
+        { name: "second.pdf", mimeType: "application/pdf", buffer: bytes },
+      ]);
+    await page
+      .getByRole("button", { name: "Process locally", exact: true })
+      .click();
+    await expect(page.getByRole("status")).toContainText(
+      "2 output file(s) ready",
+    );
     await page.getByRole("button", { name: "Download all as ZIP" }).click();
     await expect(dialog).toBeVisible();
     expect(downloads).toHaveLength(1);
+    await dialog.getByRole("button", { name: "Close account form" }).click();
+    await page.goto("/register");
+    await expect(
+      page.getByRole("heading", { name: "Create an account" }),
+    ).toBeVisible();
+    await page.getByLabel("Name", { exact: true }).fill("Signup Page User");
+    await page
+      .getByLabel("Email address", { exact: true })
+      .fill("page@example.test");
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: /Create account/ }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(
+      page.getByText("Signup Page User", { exact: true }),
+    ).toBeVisible();
+    expect(await User.countDocuments({ email: "page@example.test" })).toBe(1);
   } finally {
-    if (server?.listening)
+    if (server?.listening) {
+      server.closeAllConnections();
       await new Promise((resolve) => server.close(resolve));
+    }
     if (mongoose.connection.readyState === 1) {
       expect(mongoose.connection.name).toBe(dbName);
       await mongoose.connection.dropDatabase();

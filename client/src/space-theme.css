@@ -336,7 +336,8 @@
 }
 
 /* modal card */
-.auth-modal {
+.auth-modal,
+.auth-page-card {
   position: relative;
   width: min(440px, 100%);
   background: rgba(12, 18, 40, 0.85);
@@ -350,6 +351,14 @@
     0 0 45px rgba(92, 245, 230, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   color: #e8edf8;
+}
+
+.auth-page-section {
+  min-height: calc(100vh - 240px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
 }
 
 /* close button */

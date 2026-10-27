@@ -10,15 +10,17 @@ import { pathToFileURL } from "node:url";
 import { cleanupExpired } from "./conversion.js";
 import { createAuthRouter, User, AuthSession } from "./auth.js";
 import { resolveMongoUri } from "./database.js";
+import { isAllowedOrigin } from "./origin.js";
 const app = express();
 app.disable("x-powered-by");
 app.use(helmet());
 app.use(
   cors({
-    origin: config.CLIENT_ORIGIN,
+    origin: (origin, callback) => callback(null, isAllowedOrigin(config, origin)),
     methods: ["GET", "POST"],
     allowedHeaders: [
       "Content-Type",
+      "x-ghost-auth",
       "x-ghost-files-consent",
       "x-document-password",
     ],

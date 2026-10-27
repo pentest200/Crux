@@ -8,6 +8,7 @@ import {
 import { tools } from "./lib/catalog.js";
 import Workspace from "./components/Workspace.jsx";
 import AuthModal from "./components/AuthModal.jsx";
+import AuthPage from "./components/AuthPage.jsx";
 import { authRequest } from "./lib/auth.js";
 import { followLink, navigate, useLocation } from "./lib/navigation.js";
 
@@ -36,6 +37,9 @@ export default function App() {
   const pathname = location.split(/[?#]/)[0].replace(/\/$/, "") || "/";
   const activeTool = tools.find(tool => tool.path === pathname);
   const isHome = pathname === "/";
+  const isLogin = pathname === "/login";
+  const isRegister = pathname === "/register" || pathname === "/signup";
+  const isAuthPage = isLogin || isRegister;
   const [query, setQuery] = useState("");
   const [menu, setMenu] = useState(false);
   const reduced = useReducedMotion();
@@ -52,7 +56,15 @@ export default function App() {
     setAuthMode(null);
   }, [pathname]);
   useEffect(() => {
-    document.title = activeTool ? `${activeTool.name} | Ghost Files` : isHome ? "Ghost Files — Private file tools" : "Page not found | Ghost Files";
+    document.title = activeTool
+      ? `${activeTool.name} | Ghost Files`
+      : isLogin
+      ? "Log in | Ghost Files"
+      : isRegister
+      ? "Create account | Ghost Files"
+      : isHome
+      ? "Ghost Files — Private file tools"
+      : "Page not found | Ghost Files";
     setMenu(false);
     const hash = location.includes("#") ? location.slice(location.indexOf("#") + 1) : "";
     const frame = requestAnimationFrame(() => {
@@ -60,7 +72,7 @@ export default function App() {
       else window.scrollTo(0, 0);
     });
     return () => cancelAnimationFrame(frame);
-  }, [location, activeTool, isHome]);
+  }, [location, activeTool, isHome, isLogin, isRegister]);
 
   useEffect(() => {
     // Retire profiles and placeholder tokens created by the former demo login.
@@ -77,18 +89,33 @@ export default function App() {
   );
   useEffect(() => {
     let stopped = false;
-    (async () => {
+    let timer = null;
+    let attempts = 0;
+
+    async function syncAuth() {
       try {
         const status = await authRequest("status");
         if (stopped) return;
-        setAccountsEnabled(status.enabled === true);
-        if (status.enabled) {
+        const isEnabled = status?.enabled === true;
+        setAccountsEnabled(isEnabled);
+        if (isEnabled) {
           const data = await authRequest("me").catch(() => null);
           if (!stopped) setUser(data?.user || null);
         }
-      } catch { /* Keep account controls hidden when the backend is unavailable. */ }
-    })();
-    return () => { stopped = true; };
+      } catch {
+        // If backend is waking up, poll every 3 seconds up to 10 times to auto-reconnect
+        if (!stopped && attempts < 10) {
+          attempts++;
+          timer = setTimeout(syncAuth, 3000);
+        }
+      }
+    }
+
+    syncAuth();
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+    };
   }, []);
   async function logout() {
     setAccountError("");
@@ -119,7 +146,11 @@ export default function App() {
     setAuthMode(null);
     const pending = pendingDownload.current;
     pendingDownload.current = null;
-    if (pending?.pathname === pathname) void authorizeDownload(pending.action);
+    if (pending?.pathname === pathname) {
+      void authorizeDownload(pending.action);
+    } else if (isAuthPage) {
+      navigate("/");
+    }
   }
 
   return (
@@ -145,8 +176,8 @@ export default function App() {
             <span>{user.name}</span>
             <button type="button" className="auth-nav-btn" onClick={logout}>Log out</button>
           </> : <>
-            <button type="button" className="auth-nav-btn" onClick={() => setAuthMode("login")}>Log in</button>
-            <button type="button" className="auth-nav-btn auth-nav-signup" onClick={() => setAuthMode("signup")}>Create account</button>
+            <a href="/login" className="auth-nav-btn" onClick={followLink}>Log in</a>
+            <a href="/register" className="auth-nav-btn auth-nav-signup" onClick={followLink}>Create account</a>
           </>}
           <button className="icon-button mobile-toggle" aria-label="Toggle navigation" aria-expanded={menu} onClick={() => setMenu(!menu)}>Menu</button>
         </div>
@@ -192,7 +223,20 @@ export default function App() {
         <section id="privacy" className="section shell"><Reveal reduced={reduced}><div className="privacy-band"><div><div className="kicker lime"><span>02</span> A clearer promise</div><h2>Your file should never take a detour.</h2><p>Local tools keep your files in browser memory. Server tools ask for approval at the moment of transfer and clean up after they finish.</p></div><div className="privacy-list"><div><b><span>01</span> On your device</b><span>PDF, image, HTML, and text-based exports run locally.</span></div><div><b><span>02</span> Temporary by consent</b><span>Office rendering and password operations use the server only after approval.</span></div><div><b><span>03</span> Honest limits</b><span>Local processing reduces exposure; it cannot protect a compromised browser or device.</span></div></div></div></Reveal></section>
 
         <section id="workflow" className="section shell"><Reveal reduced={reduced}><div className="section-head"><div><div className="kicker"><span>03</span> Simple by design</div><h2>One session.<br /><em>Three decisions.</em></h2></div><p className="section-note">A visible path from input to result, with no mystery state in between.</p></div></Reveal><div className="steps">{[["Choose files", "Drop or browse. Check where the operation will happen."], ["Configure and process", "Adjust settings, preview, and run the operation."], ["Download your result", "Download individually or bundle successful results into a ZIP."]].map(([title, copy], index) => <Reveal key={title} delay={index * 0.06} reduced={reduced}><div className="step-card"><b>0{index + 1}</b><h3>{title}</h3><p>{copy}</p><span className="step-line" /></div></Reveal>)}</div></section>
-        </> : activeTool ? <Workspace key={activeTool.id} tool={activeTool} onClose={() => navigate("/#tools")} presentation="page" onAuthorizeDownload={authorizeDownload} /> : <section className="section shell"><h1>Page not found</h1><p>Choose a tool from the toolkit.</p><a className="button primary" href="/#tools" onClick={followLink}>Back to tools</a></section>}
+        </> : isAuthPage ? (
+          <AuthPage
+            key={isLogin ? "login" : "signup"}
+            mode={isLogin ? "login" : "signup"}
+            available={accountsEnabled}
+            user={user}
+            onAuthSuccess={authenticated}
+            onLogout={logout}
+          />
+        ) : activeTool ? (
+          <Workspace key={activeTool.id} tool={activeTool} onClose={() => navigate("/#tools")} presentation="page" onAuthorizeDownload={authorizeDownload} />
+        ) : (
+          <section className="section shell"><h1>Page not found</h1><p>Choose a tool from the toolkit.</p><a className="button primary" href="/#tools" onClick={followLink}>Back to tools</a></section>
+        )}
       </main>
 
       <footer className="shell footer"><span className="brand"><span className="brand-mark">G</span>Ghost Files</span><div><div><a href="/#tools" onClick={followLink}>All tools</a><i>·</i><a href="/#privacy" onClick={followLink}>Privacy</a><i>·</i><a href="/#workflow" onClick={followLink}>How it works</a></div><p>50 MB local · 25 MB server · 300 PDF pages · 24 MP images</p></div></footer>

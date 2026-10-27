@@ -73,7 +73,7 @@ export default function AuthModal({
         )}
         {!available && (
           <p role="alert" className="auth-error-banner">
-            The account service is unavailable. Please try again shortly.
+            Connecting to account service… (waking up server, please wait a moment)
           </p>
         )}
       </div>
