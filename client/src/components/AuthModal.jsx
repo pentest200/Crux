@@ -164,18 +164,7 @@ export default function AuthModal({
             </label>
 
             <label className="auth-field">
-              <div className="auth-label-row">
-                <span>Password</span>
-                {mode === "login" && (
-                  <button
-                    type="button"
-                    className="auth-link"
-                    onClick={() => alert("Password reset link sent to demo email.")}
-                  >
-                    Forgot password?
-                  </button>
-                )}
-              </div>
+              <span>Password</span>
               <div className="auth-input-wrapper">
                 <input
                   type={showPassword ? "text" : "password"}

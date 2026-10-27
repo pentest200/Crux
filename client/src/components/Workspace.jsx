@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { acceptedTypes, imageTools, videoTools } from "../lib/catalog.js";
 import {
   MAX_BYTES,
@@ -539,8 +540,14 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
   }
   const marking = ["edit", "sign", "watermark"].includes(tool.id);
   return (
-    <div className="modal-backdrop">
-      <section
+    <motion.div
+      className="modal-backdrop"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.22 }}
+    >
+      <motion.section
         className="workspace"
         role="dialog"
         aria-modal="true"
@@ -548,6 +555,10 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
         tabIndex="-1"
         ref={modal}
         onKeyDown={keydown}
+        initial={{ opacity: 0, y: 24, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 18, scale: 0.985 }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
       >
         <button className="back" onClick={close}>
           ← Back to tools
@@ -1495,7 +1506,7 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
             </p>
           </aside>
         </div>
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }

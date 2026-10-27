@@ -1,15 +1,43 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+} from "framer-motion";
 import { tools } from "./lib/catalog.js";
 import Workspace from "./components/Workspace.jsx";
-import SpaceBackground from "./components/SpaceBackground.jsx";
 import AuthModal from "./components/AuthModal.jsx";
 
-export default function App() {
-  const [active, setActive] = useState(null),
-    [query, setQuery] = useState(""),
-    [menu, setMenu] = useState(false);
+const reveal = {
+  hidden: { opacity: 0, y: 22 },
+  visible: { opacity: 1, y: 0 },
+};
 
-  // Authentication state
+function Reveal({ children, className = "", delay = 0, reduced = false }) {
+  return (
+    <motion.div
+      className={className}
+      variants={reveal}
+      initial={reduced ? false : "hidden"}
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.18 }}
+      transition={{ duration: reduced ? 0 : 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export default function App() {
+  const [active, setActive] = useState(null);
+  const [query, setQuery] = useState("");
+  const [menu, setMenu] = useState(false);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 28 });
+
   const [user, setUser] = useState(() => {
     try {
       const stored = localStorage.getItem("ghost-files-auth-user");
@@ -25,32 +53,21 @@ export default function App() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
 
-  // Close user dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setUserMenuOpen(false);
       }
     };
-    if (userMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    if (userMenuOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [userMenuOpen]);
 
-  const handleLogout = (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    try {
-      localStorage.removeItem("ghost-files-auth-user");
-      localStorage.removeItem("ghost-files-auth-token");
-    } catch (err) {
-      console.error("Logout storage error:", err);
-    }
+  const handleLogout = (event) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    localStorage.removeItem("ghost-files-auth-user");
+    localStorage.removeItem("ghost-files-auth-token");
     setUser(null);
     setUserMenuOpen(false);
   };
@@ -62,315 +79,119 @@ export default function App() {
     setMenu(false);
   };
 
-  // Called when an unauthenticated user clicks a Download button
   const handleRequireAuth = (downloadAction) => {
     setPendingDownload(() => downloadAction);
     setAuthCustomMessage(
-      "Please sign in to complete your download. Once signed in, you will be redirected right back and your file will download automatically.",
+      "Sign in to finish the download. You will return to this workspace automatically.",
     );
     setAuthMode("login");
     setAuthModalOpen(true);
   };
 
-  // Called when login or signup succeeds
   const handleAuthSuccess = (userData) => {
     setUser(userData);
     setAuthModalOpen(false);
     setAuthCustomMessage("");
-
-    // Automatically resume and trigger the pending download!
     if (pendingDownload) {
       setTimeout(() => {
-        try {
-          pendingDownload();
-        } catch (err) {
-          console.error("Auto-download error:", err);
-        }
+        pendingDownload();
         setPendingDownload(null);
       }, 300);
     }
   };
 
+  const filteredTools = tools.filter((tool) =>
+    `${tool.name} ${tool.description}`.toLowerCase().includes(query.toLowerCase()),
+  );
+
   return (
     <div className="app">
-      <SpaceBackground />
+      <div className="ambient ambient-lime" aria-hidden="true" />
+      <div className="ambient ambient-amber" aria-hidden="true" />
+      <motion.div className="scroll-progress" style={{ scaleX: progress }} aria-hidden="true" />
+
       <header className="nav shell">
-        <a className="brand" href="#home">
-          <span className="brand-mark">G</span>Ghost Files
+        <a className="brand" href="#home" onClick={() => setMenu(false)}>
+          <span className="brand-mark">G</span>
+          <span>Ghost Files</span>
+          <span className="brand-version">/ 01</span>
         </a>
-        <nav className={menu ? "menu-open" : ""}>
-          <a href="#home" onClick={() => setMenu(false)}>
-            Home
-          </a>
-          <a href="#tools" onClick={() => setMenu(false)}>
-            All tools
-          </a>
-          <a href="#privacy" onClick={() => setMenu(false)}>
-            Privacy
-          </a>
+        <nav className={menu ? "menu-open" : ""} aria-label="Primary navigation">
+          <a href="#tools" onClick={() => setMenu(false)}>Tools <span>01</span></a>
+          <a href="#privacy" onClick={() => setMenu(false)}>Privacy <span>02</span></a>
+          <a href="#workflow" onClick={() => setMenu(false)}>Workflow <span>03</span></a>
         </nav>
         <div className="nav-buttons">
           {user ? (
             <div className="user-menu-container" ref={userMenuRef}>
-              <button
-                type="button"
-                className="user-avatar-btn"
-                onClick={() => setUserMenuOpen((prev) => !prev)}
-                aria-expanded={userMenuOpen}
-                aria-label="User account menu"
-              >
+              <button type="button" className="user-avatar-btn" onClick={() => setUserMenuOpen((open) => !open)} aria-expanded={userMenuOpen}>
                 <span className="user-avatar-circle">{user.avatarInitial || "U"}</span>
-                <span className="user-avatar-name">{user.name || "Cosmic User"}</span>
-                <span className="user-dropdown-arrow">▼</span>
+                <span className="user-avatar-name">{user.name || "Local user"}</span>
+                <span className="user-dropdown-arrow">↓</span>
               </button>
-              {userMenuOpen && (
-                <div className="user-dropdown-menu">
-                  <div className="user-dropdown-info">
-                    <strong>{user.name}</strong>
-                    <span>{user.email}</span>
-                  </div>
-                  <button type="button" className="user-logout-btn" onClick={handleLogout}>
-                    Log Out
-                  </button>
-                </div>
-              )}
-              <button
-                type="button"
-                className="auth-nav-btn auth-nav-logout"
-                onClick={handleLogout}
-                title="Log out of your account"
-              >
-                Log Out
-              </button>
+              <AnimatePresence>
+                {userMenuOpen && (
+                  <motion.div className="user-dropdown-menu" initial={{ opacity: 0, y: -8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.98 }} transition={{ duration: reduced ? 0 : 0.18 }}>
+                    <div className="user-dropdown-info"><strong>{user.name}</strong><span>{user.email}</span></div>
+                    <button type="button" className="user-logout-btn" onClick={handleLogout}>Log out</button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <>
-              <button
-                type="button"
-                className="auth-nav-btn"
-                onClick={() => openAuth("login")}
-              >
-                Log In
-              </button>
-              <button
-                type="button"
-                className="auth-nav-btn auth-nav-signup"
-                onClick={() => openAuth("signup")}
-              >
-                Sign Up
-              </button>
+              <button type="button" className="auth-nav-btn" onClick={() => openAuth("login")}>Log in</button>
+              <button type="button" className="auth-nav-btn auth-nav-signup" onClick={() => openAuth("signup")}>Create account <span>↗</span></button>
             </>
           )}
-          <button
-            className="icon-button mobile-toggle"
-            aria-label="Toggle navigation"
-            aria-expanded={menu}
-            onClick={() => setMenu(!menu)}
-          >
-            Menu
-          </button>
+          <button className="icon-button mobile-toggle" aria-label="Toggle navigation" aria-expanded={menu} onClick={() => setMenu(!menu)}>Menu</button>
         </div>
       </header>
+
       <main>
         <section id="home" className="hero shell">
-          <div>
-            <div className="eyebrow">
-              <span />
-              Private by default
-            </div>
-            <h1>
-              Your files.
-              <br />
-              <em>Your device.</em>
-              <br />
-              Your privacy.
-            </h1>
-            <p>
-              PDF and image tools for everyday work. Local tools process files
-              in this browser. Every server upload asks for your approval.
-            </p>
+          <Reveal reduced={reduced}>
+            <div className="eyebrow"><span /> Privacy-first file tools <b>·</b> v1.0</div>
+            <h1>Files in.<br /><em>Nothing else.</em></h1>
+            <p className="hero-lede">A quiet toolkit for the work that happens around a document. Convert, sign, compress, and edit without handing your files to a stranger.</p>
             <div className="hero-actions">
-              <a className="button primary" href="#tools">
-                Explore all tools →
-              </a>
-              <a className="button quiet" href="#privacy">
-                How privacy works
-              </a>
+              <motion.a className="button primary" href="#tools" whileHover={reduced ? undefined : { y: -3 }} whileTap={reduced ? undefined : { scale: 0.98 }}>Open the toolkit <span>↗</span></motion.a>
+              <a className="button quiet" href="#privacy">Read the privacy model</a>
             </div>
-            <div className="micro-note">
-              No accounts. No document library. No analytics.
-            </div>
-          </div>
-          <div className="hero-card">
-            <div className="card-top">
-              <span>Your private workspace</span>
-              <span className="local">
-                <i />
-                On-device tools
-              </span>
-            </div>
-            <button className="dropzone" onClick={() => setActive("merge")}>
-              <span className="drop-icon">PDF</span>
-              <strong>Start with your files</strong>
-              <span>Merge, convert, sign, edit, and more.</span>
-              <b>Open Merge PDF</b>
-            </button>
-            <div className="card-bottom">
-              <span>Local processing works without the API</span>
-            </div>
-          </div>
+            <div className="micro-note"><span className="status-dot" /> Local by default <i>·</i> No document library <i>·</i> No analytics</div>
+          </Reveal>
+
+          <Reveal className="hero-visual-wrap" delay={0.12} reduced={reduced}>
+            <motion.div className="hero-card" whileHover={reduced ? undefined : { y: -6, rotate: 0 }} transition={{ duration: 0.35 }}>
+              <div className="card-top"><span className="mono-label">GHOST FILES / WORKSPACE</span><span className="local"><i /> ON-DEVICE</span></div>
+              <div className="hero-card-main"><div className="signal-ring"><span>GF</span></div><div><span className="mono-label">READY WHEN YOU ARE</span><strong>Start with a file.</strong><p>Drop it here, then choose the smallest useful operation.</p></div></div>
+              <button className="dropzone" onClick={() => setActive("merge")}><span className="drop-icon">+</span><strong>Open Merge PDF</strong><span>Local processing · 50 MB per file</span><b>Launch tool ↗</b></button>
+              <div className="card-bottom"><span>Session is held in browser memory</span><span className="mono-label">NO UPLOAD</span></div>
+            </motion.div>
+          </Reveal>
         </section>
+
         <section id="tools" className="section shell">
-          <div className="section-head">
-            <div>
-              <div className="kicker">The toolkit</div>
-              <h2>
-                Useful tools, minus
-                <br />
-                the privacy trade-off.
-              </h2>
-            </div>
-            <label className="search-label">
-              Find a tool
-              <input
-                type="search"
-                placeholder="Search tools..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </label>
-          </div>
-          <div className="tool-grid">
-            {tools
-              .filter((tool) =>
-                `${tool.name} ${tool.description}`
-                  .toLowerCase()
-                  .includes(query.toLowerCase()),
-              )
-              .map((tool) => (
-                <button
-                  className="tool-card"
-                  key={tool.id}
-                  onClick={() => setActive(tool.id)}
-                >
-                  <span className="tool-icon" style={{ background: tool.tint }}>
-                    {tool.icon}
-                  </span>
-                  <strong>{tool.name}</strong>
-                  <span>{tool.description}</span>
-                  <small>
-                    {tool.mode === "server"
-                      ? "Temporary server processing"
-                      : "Processed on your device"}
-                  </small>
-                </button>
-              ))}
-          </div>
-        </section>
-        <section id="privacy" className="section shell">
-          <div className="privacy-band">
-            <div>
-              <div className="kicker lime">A clearer promise</div>
-              <h2>Your file should never take a detour.</h2>
-              <p>
-                Local tools keep your files in browser memory. Office-to-PDF and
-                password operations use temporary server processing only after
-                you approve the upload. Files are removed when processing
-                finishes or fails.
-              </p>
-            </div>
-            <div className="privacy-list">
-              <div>
-                <b>Processed on your device</b>
-                <span>
-                  PDF, image, HTML, and text-based PDF-to-Office exports run
-                  locally.
-                </span>
-              </div>
-              <div>
-                <b>Temporary server processing</b>
-                <span>
-                  Office rendering and PDF encryption use LibreOffice and qpdf.
-                  Review consent before transfer.
-                </span>
-              </div>
-              <div>
-                <b>Understand the limits</b>
-                <span>
-                  Local processing reduces server exposure. It cannot protect a
-                  compromised browser or device. Ordinary deletion does not
-                  guarantee physical erasure.
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-        <section id="workflow" className="section shell">
-          <div className="section-head">
-            <div>
-              <div className="kicker">Simple by design</div>
-              <h2>
-                Three steps.
-                <br />
-                One less worry.
-              </h2>
-            </div>
-          </div>
-          <div className="steps">
-            {[
-              [
-                "Choose files",
-                "Drop or browse. Check the visible processing location.",
-              ],
-              [
-                "Configure and process",
-                "Adjust settings, preview, and run the operation.",
-              ],
-              [
-                "Download your result",
-                "Download individually or bundle successful results into a ZIP.",
-              ],
-            ].map(([title, copy], index) => (
-              <div key={title}>
-                <b>0{index + 1}</b>
-                <h3>{title}</h3>
-                <p>{copy}</p>
-              </div>
+          <Reveal reduced={reduced}><div className="section-head"><div><div className="kicker"><span>01</span> The toolkit</div><h2>Small tools.<br /><em>Clear boundaries.</em></h2></div><label className="search-label">Find a tool<input type="search" placeholder="Search tools..." value={query} onChange={(event) => setQuery(event.target.value)} /></label></div></Reveal>
+          <motion.div className="tool-grid" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.08 }} variants={{ visible: { transition: { staggerChildren: reduced ? 0 : 0.045 } } }}>
+            {filteredTools.map((tool, index) => (
+              <motion.button className="tool-card" key={tool.id} variants={reveal} whileHover={reduced ? undefined : { y: -6 }} whileTap={reduced ? undefined : { scale: 0.985 }} onClick={() => setActive(tool.id)}>
+                <span className="tool-index">{String(index + 1).padStart(2, "0")}</span><span className="tool-icon" style={{ background: tool.tint }}>{tool.icon}</span><strong>{tool.name}</strong><span>{tool.description}</span><small>{tool.mode === "server" ? "Temporary server processing" : "Processed on your device"}<b>↗</b></small>
+              </motion.button>
             ))}
-          </div>
+          </motion.div>
+          {!filteredTools.length && <div className="empty-state">No tools match “{query}”. Try a broader search.</div>}
         </section>
+
+        <section id="privacy" className="section shell"><Reveal reduced={reduced}><div className="privacy-band"><div><div className="kicker lime"><span>02</span> A clearer promise</div><h2>Your file should never take a detour.</h2><p>Local tools keep your files in browser memory. Server tools ask for approval at the moment of transfer and clean up after they finish.</p></div><div className="privacy-list"><div><b><span>01</span> On your device</b><span>PDF, image, HTML, and text-based exports run locally.</span></div><div><b><span>02</span> Temporary by consent</b><span>Office rendering and password operations use the server only after approval.</span></div><div><b><span>03</span> Honest limits</b><span>Local processing reduces exposure; it cannot protect a compromised browser or device.</span></div></div></div></Reveal></section>
+
+        <section id="workflow" className="section shell"><Reveal reduced={reduced}><div className="section-head"><div><div className="kicker"><span>03</span> Simple by design</div><h2>One session.<br /><em>Three decisions.</em></h2></div><p className="section-note">A visible path from input to result, with no mystery state in between.</p></div></Reveal><div className="steps">{[["Choose files", "Drop or browse. Check where the operation will happen."], ["Configure and process", "Adjust settings, preview, and run the operation."], ["Download your result", "Download individually or bundle successful results into a ZIP."]].map(([title, copy], index) => <Reveal key={title} delay={index * 0.06} reduced={reduced}><div className="step-card"><b>0{index + 1}</b><h3>{title}</h3><p>{copy}</p><span className="step-line" /></div></Reveal>)}</div></section>
       </main>
-      <footer className="shell footer">
-        <span className="brand">Ghost Files</span>
-        <div>
-          <a href="#tools">All tools</a> ·{" "}
-          <a href="#privacy">Privacy & limitations</a> ·{" "}
-          <a href="#workflow">How it works</a>
-          <p>
-            50 MB per local file · 25 MB per server file · 300 PDF pages · 24 MP
-            images
-          </p>
-        </div>
-      </footer>
-      {active && (
-        <Workspace
-          key={active}
-          tool={tools.find((tool) => tool.id === active)}
-          onClose={() => setActive(null)}
-          user={user}
-          onRequireAuth={handleRequireAuth}
-        />
-      )}
-      <AuthModal
-        isOpen={authModalOpen}
-        initialMode={authMode}
-        customMessage={authCustomMessage}
-        onClose={() => {
-          setAuthModalOpen(false);
-          setAuthCustomMessage("");
-        }}
-        onAuthSuccess={handleAuthSuccess}
-      />
+
+      <footer className="shell footer"><span className="brand"><span className="brand-mark">G</span>Ghost Files</span><div><div><a href="#tools">All tools</a><i>·</i><a href="#privacy">Privacy</a><i>·</i><a href="#workflow">How it works</a></div><p>50 MB local · 25 MB server · 300 PDF pages · 24 MP images</p></div></footer>
+
+      <AnimatePresence mode="wait">{active && <Workspace key={active} tool={tools.find((tool) => tool.id === active)} onClose={() => setActive(null)} user={user} onRequireAuth={handleRequireAuth} />}</AnimatePresence>
+      <AuthModal isOpen={authModalOpen} initialMode={authMode} customMessage={authCustomMessage} onClose={() => { setAuthModalOpen(false); setAuthCustomMessage(""); }} onAuthSuccess={handleAuthSuccess} />
     </div>
   );
 }
