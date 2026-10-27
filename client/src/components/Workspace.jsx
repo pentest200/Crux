@@ -43,13 +43,23 @@ function Field({ label, children }) {
     </label>
   );
 }
-export default function Workspace({ tool, onClose }) {
+export default function Workspace({ tool, onClose, user, onRequireAuth }) {
   const [files, setFiles] = useState([]),
     [options, setOptions] = useState(defaults),
     [results, setResults] = useState([]),
     [status, setStatus] = useState(""),
     [errors, setErrors] = useState([]),
     [busy, setBusy] = useState(false);
+
+  const handleDownload = (downloadAction) => {
+    if (!user) {
+      if (onRequireAuth) {
+        onRequireAuth(downloadAction);
+      }
+      return;
+    }
+    downloadAction();
+  };
   const [consent, setConsent] = useState(false),
     [password, setPassword] = useState(""),
     [capabilities, setCapabilities] = useState(null),
@@ -238,13 +248,6 @@ export default function Workspace({ tool, onClose }) {
     });
   }
   function close() {
-    if (
-      (files.length || results.length || busy) &&
-      !window.confirm(
-        "Close this workspace and discard selected files and generated results?",
-      )
-    )
-      return;
     onClose();
   }
   function keydown(event) {
@@ -1092,7 +1095,7 @@ export default function Workspace({ tool, onClose }) {
                   </span>
                   <button
                     className="button lime-button"
-                    onClick={() => download(result.blob, result.name)}
+                    onClick={() => handleDownload(() => download(result.blob, result.name))}
                   >
                     Download
                   </button>
@@ -1101,16 +1104,18 @@ export default function Workspace({ tool, onClose }) {
               {results.length > 1 && (
                 <button
                   className="button quiet"
-                  onClick={async () => {
-                    try {
-                      download(
-                        await zipResults(results),
-                        "ghost-files-results.zip",
-                      );
-                    } catch (error) {
-                      setErrors([error.message]);
-                    }
-                  }}
+                  onClick={() =>
+                    handleDownload(async () => {
+                      try {
+                        download(
+                          await zipResults(results),
+                          "ghost-files-results.zip",
+                        );
+                      } catch (error) {
+                        setErrors([error.message]);
+                      }
+                    })
+                  }
                 >
                   Download all as ZIP
                 </button>

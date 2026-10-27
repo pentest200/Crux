@@ -1,12 +1,95 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { tools } from "./lib/catalog.js";
 import Workspace from "./components/Workspace.jsx";
 import SpaceBackground from "./components/SpaceBackground.jsx";
+import AuthModal from "./components/AuthModal.jsx";
 
 export default function App() {
   const [active, setActive] = useState(null),
     [query, setQuery] = useState(""),
     [menu, setMenu] = useState(false);
+
+  // Authentication state
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem("ghost-files-auth-user");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState("login");
+  const [authCustomMessage, setAuthCustomMessage] = useState("");
+  const [pendingDownload, setPendingDownload] = useState(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
+
+  // Close user dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    if (userMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [userMenuOpen]);
+
+  const handleLogout = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    try {
+      localStorage.removeItem("ghost-files-auth-user");
+      localStorage.removeItem("ghost-files-auth-token");
+    } catch (err) {
+      console.error("Logout storage error:", err);
+    }
+    setUser(null);
+    setUserMenuOpen(false);
+  };
+
+  const openAuth = (mode) => {
+    setAuthMode(mode);
+    setAuthCustomMessage("");
+    setAuthModalOpen(true);
+    setMenu(false);
+  };
+
+  // Called when an unauthenticated user clicks a Download button
+  const handleRequireAuth = (downloadAction) => {
+    setPendingDownload(() => downloadAction);
+    setAuthCustomMessage(
+      "Please sign in to complete your download. Once signed in, you will be redirected right back and your file will download automatically.",
+    );
+    setAuthMode("login");
+    setAuthModalOpen(true);
+  };
+
+  // Called when login or signup succeeds
+  const handleAuthSuccess = (userData) => {
+    setUser(userData);
+    setAuthModalOpen(false);
+    setAuthCustomMessage("");
+
+    // Automatically resume and trigger the pending download!
+    if (pendingDownload) {
+      setTimeout(() => {
+        try {
+          pendingDownload();
+        } catch (err) {
+          console.error("Auto-download error:", err);
+        }
+        setPendingDownload(null);
+      }, 300);
+    }
+  };
 
   return (
     <div className="app">
@@ -27,6 +110,57 @@ export default function App() {
           </a>
         </nav>
         <div className="nav-buttons">
+          {user ? (
+            <div className="user-menu-container" ref={userMenuRef}>
+              <button
+                type="button"
+                className="user-avatar-btn"
+                onClick={() => setUserMenuOpen((prev) => !prev)}
+                aria-expanded={userMenuOpen}
+                aria-label="User account menu"
+              >
+                <span className="user-avatar-circle">{user.avatarInitial || "U"}</span>
+                <span className="user-avatar-name">{user.name || "Cosmic User"}</span>
+                <span className="user-dropdown-arrow">▼</span>
+              </button>
+              {userMenuOpen && (
+                <div className="user-dropdown-menu">
+                  <div className="user-dropdown-info">
+                    <strong>{user.name}</strong>
+                    <span>{user.email}</span>
+                  </div>
+                  <button type="button" className="user-logout-btn" onClick={handleLogout}>
+                    Log Out
+                  </button>
+                </div>
+              )}
+              <button
+                type="button"
+                className="auth-nav-btn auth-nav-logout"
+                onClick={handleLogout}
+                title="Log out of your account"
+              >
+                Log Out
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="auth-nav-btn"
+                onClick={() => openAuth("login")}
+              >
+                Log In
+              </button>
+              <button
+                type="button"
+                className="auth-nav-btn auth-nav-signup"
+                onClick={() => openAuth("signup")}
+              >
+                Sign Up
+              </button>
+            </>
+          )}
           <button
             className="icon-button mobile-toggle"
             aria-label="Toggle navigation"
@@ -223,8 +357,20 @@ export default function App() {
           key={active}
           tool={tools.find((tool) => tool.id === active)}
           onClose={() => setActive(null)}
+          user={user}
+          onRequireAuth={handleRequireAuth}
         />
       )}
+      <AuthModal
+        isOpen={authModalOpen}
+        initialMode={authMode}
+        customMessage={authCustomMessage}
+        onClose={() => {
+          setAuthModalOpen(false);
+          setAuthCustomMessage("");
+        }}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }
