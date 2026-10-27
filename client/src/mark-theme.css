@@ -94,6 +94,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .search-label { display: grid; gap: 8px; min-width: 240px; color: var(--faint); font: 10px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .08em; }
 .search-label input, .full-field input, .full-field textarea { width: 100%; padding: 12px 13px; border: 1px solid var(--line); border-radius: 2px; background: #171a17; color: var(--ink); font-size: 12px; }
 .search-label input::placeholder, .full-field input::placeholder { color: var(--faint); }
+.tool-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; width: min(100%, 360px); }
+.tool-search .search-label { min-width: 0; margin-top: 0; }
+.search-clear { min-height: 42px; padding: 10px; border: 1px solid var(--line); border-radius: 2px; background: var(--panel); color: var(--ink); font-size: 12px; }
+.search-summary { margin: 0 0 12px; color: var(--muted); font: 11px "DM Mono", monospace; }
 .tool-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
 .tool-card { position: relative; min-height: 205px; padding: 20px; text-align: left; border: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: rgba(23,26,23,.75); color: var(--ink); transition: background .25s ease, color .25s ease; }
 .tool-card:hover { background: #20261e; }

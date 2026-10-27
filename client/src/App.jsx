@@ -41,6 +41,7 @@ export default function App() {
   const isRegister = pathname === "/register" || pathname === "/signup";
   const isAuthPage = isLogin || isRegister;
   const [query, setQuery] = useState("");
+  const searchInput = useRef(null);
   const [menu, setMenu] = useState(false);
   const reduced = useReducedMotion();
   const { scrollYProgress } = useScroll();
@@ -84,9 +85,14 @@ export default function App() {
     }
   }, []);
 
+  const searchQuery = query.trim().toLowerCase().replace(/\s+/g, " ");
   const filteredTools = tools.filter((tool) =>
-    `${tool.name} ${tool.description}`.toLowerCase().includes(query.toLowerCase()),
+    `${tool.name} ${tool.description}`.toLowerCase().includes(searchQuery),
   );
+  function clearSearch() {
+    setQuery("");
+    searchInput.current?.focus();
+  }
   useEffect(() => {
     let stopped = false;
     let timer = null;
@@ -209,14 +215,16 @@ export default function App() {
         </section>
 
         <section id="tools" className="section shell">
-          <Reveal reduced={reduced}><div className="section-head"><div><div className="kicker"><span>01</span> The toolkit</div><h2>Small tools.<br /><em>Clear boundaries.</em></h2></div><label className="search-label">Find a tool<input type="search" placeholder="Search tools..." value={query} onChange={(event) => setQuery(event.target.value)} /></label></div></Reveal>
-          <motion.div className="tool-grid" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.08 }} variants={{ visible: { transition: { staggerChildren: reduced ? 0 : 0.045 } } }}>
+          <Reveal reduced={reduced}><div className="section-head"><div><div className="kicker"><span>01</span> The toolkit</div><h2>Small tools.<br /><em>Clear boundaries.</em></h2></div><div className="tool-search"><label className="search-label">Find a tool<input ref={searchInput} type="search" placeholder="Search tools..." value={query} aria-controls="tool-results" aria-describedby="tool-search-summary" onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); clearSearch(); } }} /></label><button type="button" className="search-clear" disabled={!query} onClick={clearSearch}>Clear search</button></div></div></Reveal>
+          <p id="tool-search-summary" className="search-summary" role="status" aria-live="polite" aria-atomic="true">{filteredTools.length} of {tools.length} tools</p>
+          {/* Filtered cards must never inherit hidden, one-shot viewport variants. */}
+          <div id="tool-results" className="tool-grid">
             {filteredTools.map((tool, index) => (
-              <motion.a className="tool-card" href={tool.path} onClick={followLink} key={tool.id} variants={reveal} whileHover={reduced ? undefined : { y: -6 }} whileTap={reduced ? undefined : { scale: 0.985 }}>
+              <motion.a className="tool-card" href={tool.path} onClick={followLink} key={tool.id} whileHover={reduced ? undefined : { y: -6 }} whileTap={reduced ? undefined : { scale: 0.985 }}>
                 <span className="tool-index">{String(index + 1).padStart(2, "0")}</span><span className="tool-icon" style={{ background: tool.tint }}>{tool.icon}</span><strong>{tool.name}</strong><span>{tool.description}</span><small>{tool.mode === "server" ? "Temporary server processing" : "Processed on your device"}<b>↗</b></small>
               </motion.a>
             ))}
-          </motion.div>
+          </div>
           {!filteredTools.length && <div className="empty-state">No tools match “{query}”. Try a broader search.</div>}
         </section>
 
