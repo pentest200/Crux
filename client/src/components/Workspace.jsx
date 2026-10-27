@@ -10,6 +10,7 @@ import {
 } from "../lib/files.js";
 import PdfPreview from "./PdfPreview.jsx";
 import Signature from "./Signature.jsx";
+import { conversionError } from "../lib/conversion-response.js";
 
 const defaults = {
   pages: "all",
@@ -377,8 +378,7 @@ export default function Workspace({ tool, onClose, presentation = "dialog", onAu
                 signal,
               });
               if (!response.ok) {
-                const body = await response.json().catch(() => ({}));
-                throw new Error(body.error || "Server conversion failed.");
+                throw await conversionError(response);
               }
               output.push({
                 name: `${prefix}-${tool.id}.pdf`,

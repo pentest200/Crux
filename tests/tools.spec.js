@@ -175,6 +175,38 @@ test("server consent prevents upload and supports mobile layout", async ({
     ),
   ).toBe(true);
 });
+
+test("PPTX gateway failure is explained and an explicit retry can recover", async ({ page }) => {
+  let uploads = 0;
+  const output = await pdf();
+  await page.route("**/api/capabilities", route => route.fulfill({ json: { server: { "powerpoint-to-pdf": true } } }));
+  await page.route("**/api/convert/powerpoint-to-pdf", route => {
+    uploads++;
+    expect(route.request().headers()["x-ghost-files-consent"]).toBe("approved");
+    return uploads === 1
+      ? route.fulfill({ status: 502, contentType: "text/html", body: "<html>Bad gateway</html>" })
+      : route.fulfill({ status: 200, contentType: "application/pdf", body: output });
+  });
+  const { default: PptxGenJS } = await import("pptxgenjs");
+  const deck = new PptxGenJS();
+  deck.addSlide().addText("Fixture", { x: 1, y: 1, w: 5, h: 1 });
+  await choose(page, "PowerPoint to PDF", [{
+    name: "fixture.pptx", mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    buffer: await deck.write({ outputType: "nodebuffer" }),
+  }]);
+  await page.getByRole("checkbox", { name: /I approve uploading/ }).check();
+  const process = page.getByRole("button", { name: "Upload and process" });
+  await process.click();
+  await expect(page.getByRole("alert")).toContainText("HTTP 502");
+  await expect(page.getByRole("alert")).toContainText("Wait a moment");
+  expect(uploads).toBe(1); // No automatic replay of a potentially expensive upload.
+  await expect(page.getByRole("button", { name: "Download", exact: true })).toHaveCount(0);
+  await expect(process).toBeEnabled();
+  await process.click();
+  await expect(page.getByRole("status")).toContainText("1 output file(s) ready");
+  expect(uploads).toBe(2);
+  expect((await PDFDocument.load(await downloaded(page))).getPageCount()).toBe(2);
+});
 test("invalid ranges and batch failures preserve successful downloads", async ({
   page,
 }) => {

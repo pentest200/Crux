@@ -1,17 +1,88 @@
 import { test, expect } from "@playwright/test";
 import { PDFDocument } from "pdf-lib";
 import { readFile } from "node:fs/promises";
+import PptxGenJS from "pptxgenjs";
+
+test("production PPTX upload converts slides into a downloadable PDF", async ({
+  page,
+}) => {
+  test.skip(
+    !process.env.BROWSER_BASE_URL ||
+      !process.env.TEST_AUTH_EMAIL ||
+      !process.env.TEST_AUTH_PASSWORD,
+    "Requires an auth-enabled LibreOffice API and a dedicated test account.",
+  );
+  const origin = new URL(process.env.BROWSER_BASE_URL).origin;
+  const login = await page.request.post("/api/auth/login", {
+    headers: { Origin: origin, "x-ghost-auth": "1" },
+    data: {
+      email: process.env.TEST_AUTH_EMAIL,
+      password: process.env.TEST_AUTH_PASSWORD,
+    },
+  });
+  expect(login.ok()).toBe(true);
+  const deck = new PptxGenJS();
+  for (let index = 1; index <= 2; index++) {
+    deck
+      .addSlide()
+      .addText(`PPTX regression slide ${index}`, {
+        x: 1,
+        y: 1,
+        w: 8,
+        h: 1,
+        fontSize: 24,
+      });
+  }
+  await page.goto("/tools/powerpoint-to-pdf");
+  await page
+    .locator("input[type=file]")
+    .first()
+    .setInputFiles({
+      name: "regression.pptx",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      buffer: await deck.write({ outputType: "nodebuffer" }),
+    });
+  await expect(
+    page.getByRole("button", { name: "Upload and process" }),
+  ).toBeDisabled();
+  await page.getByRole("checkbox", { name: /I approve uploading/ }).check();
+  const converted = page.waitForResponse((response) =>
+    response.url().endsWith("/api/convert/powerpoint-to-pdf"),
+  );
+  await page.getByRole("button", { name: "Upload and process" }).click();
+  expect((await converted).status()).toBe(200);
+  await expect(page.getByRole("status")).toContainText(
+    "1 output file(s) ready",
+  );
+  const downloading = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download", exact: true }).click();
+  const output = await downloading;
+  expect(
+    (
+      await PDFDocument.load(await readFile(await output.path()))
+    ).getPageCount(),
+  ).toBe(2);
+});
 
 test("production password upload requires consent and returns a working PDF", async ({
   page,
 }) => {
   test.skip(
-    !process.env.BROWSER_BASE_URL || !process.env.TEST_AUTH_EMAIL || !process.env.TEST_AUTH_PASSWORD,
+    !process.env.BROWSER_BASE_URL ||
+      !process.env.TEST_AUTH_EMAIL ||
+      !process.env.TEST_AUTH_PASSWORD,
     "Requires a running qpdf API and an existing test account through TEST_AUTH_EMAIL/TEST_AUTH_PASSWORD.",
   );
   const login = await page.request.post("/api/auth/login", {
-    headers: { Origin: new URL(process.env.BROWSER_BASE_URL).origin, "x-ghost-auth": "1" },
-    data: { email: process.env.TEST_AUTH_EMAIL, password: process.env.TEST_AUTH_PASSWORD },
+    headers: {
+      Origin: new URL(process.env.BROWSER_BASE_URL).origin,
+      "x-ghost-auth": "1",
+    },
+    data: {
+      email: process.env.TEST_AUTH_EMAIL,
+      password: process.env.TEST_AUTH_PASSWORD,
+    },
   });
   expect(login.ok()).toBe(true);
   const original = await PDFDocument.create();

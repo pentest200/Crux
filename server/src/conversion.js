@@ -12,7 +12,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import JSZip from "jszip";
 import { config } from "./config.js";
@@ -57,14 +57,18 @@ function runConversion(command, args, options) {
       cleanup();
       reject(error);
     });
-    child.once("close", (code) => {
+    child.once("close", (code, signal) => {
       cleanup();
       if (killed) {
         const error = new Error("timeout or cancellation");
         error.killed = true;
         reject(error);
-      } else if (code !== 0) reject(new Error("conversion process failed"));
-      else resolve();
+      } else if (code !== 0) {
+        const error = new Error("conversion process failed");
+        error.exitCode = code;
+        error.signal = signal;
+        reject(error);
+      } else resolve();
     });
   });
 }
@@ -171,9 +175,13 @@ export async function validateUpload(file, kind) {
         );
         if (externalMatches) {
           for (const rel of externalMatches) {
-            const isHyperlink = /Type\s*=\s*["'][^"']*\/hyperlink["']/i.test(rel);
-            const isSafeWebTarget = /Target\s*=\s*["'](?:https?:\/\/|mailto:)/i.test(rel);
-            const isDangerousScheme = /Target\s*=\s*["'](?:file|smb|gopher|ftp):\/\//i.test(rel);
+            const isHyperlink = /Type\s*=\s*["'][^"']*\/hyperlink["']/i.test(
+              rel,
+            );
+            const isSafeWebTarget =
+              /Target\s*=\s*["'](?:https?:\/\/|mailto:)/i.test(rel);
+            const isDangerousScheme =
+              /Target\s*=\s*["'](?:file|smb|gopher|ftp):\/\//i.test(rel);
             if (isDangerousScheme || (!isHyperlink && !isSafeWebTarget)) {
               throw new ConversionError(
                 "Documents with dangerous external resource links are unsupported.",
@@ -224,6 +232,13 @@ export async function convertFile(
       429,
     );
   active = true;
+  const startedAt = Date.now();
+  const remainingTime = () => {
+    const remaining = config.JOB_TIMEOUT_MS - (Date.now() - startedAt);
+    if (remaining <= 0)
+      throw new ConversionError("Conversion timed out or was cancelled.", 408);
+    return remaining;
+  };
   let directory;
   try {
     const extension = await validateUpload(file, kind);
@@ -250,13 +265,36 @@ export async function convertFile(
     await writeFile(input, file.buffer, { mode: 0o600 });
     const options = {
       cwd: directory,
-      timeout: config.JOB_TIMEOUT_MS,
+      timeout: remainingTime(),
       killSignal: "SIGKILL",
       maxBuffer: 256 * 1024,
       windowsHide: true,
       signal,
       env: { ...process.env, HOME: directory, TMPDIR: directory },
     };
+    let officeInput = input;
+    if (kind === "powerpoint-to-pdf") {
+      officeInput = path.join(directory, "prepared.pptx");
+      try {
+        await execute(
+          process.execPath,
+          [
+            fileURLToPath(new URL("./pptx-media-worker.js", import.meta.url)),
+            input,
+            officeInput,
+          ],
+          options,
+        );
+      } catch (error) {
+        if (error.exitCode === 65)
+          throw new ConversionError(
+            "A presentation image is invalid, animated, or exceeds the 100-megapixel safety limit.",
+            422,
+          );
+        throw error;
+      }
+      options.timeout = remainingTime();
+    }
     if (kind in officeKinds) {
       await execute(
         config.LIBREOFFICE_PATH,
@@ -270,7 +308,7 @@ export async function convertFile(
           "pdf",
           "--outdir",
           directory,
-          input,
+          officeInput,
         ],
         options,
       );
@@ -284,10 +322,15 @@ export async function convertFile(
       await writeFile(argumentFile, args.join("\n") + "\n", { mode: 0o600 });
       await execute(config.QPDF_PATH, [`@${argumentFile}`], options);
     }
-    const info = await stat(output);
+    // LibreOffice names the PDF after its actual input, including prepared PPTX.
+    const resultPath =
+      kind === "powerpoint-to-pdf"
+        ? path.join(directory, "prepared.pdf")
+        : output;
+    const info = await stat(resultPath);
     if (info.size > 100 * 1024 * 1024)
       throw new ConversionError("Converted output exceeds 100 MB.", 413);
-    const bytes = await readFile(output);
+    const bytes = await readFile(resultPath);
     if (bytes.subarray(0, 5).toString() !== "%PDF-")
       throw new ConversionError("The converter did not produce a valid PDF.");
     return bytes;
@@ -295,6 +338,11 @@ export async function convertFile(
     if (error instanceof ConversionError) throw error;
     if (error.killed || error.code === "ABORT_ERR")
       throw new ConversionError("Conversion timed out or was cancelled.", 408);
+    if (error.signal === "SIGKILL")
+      throw new ConversionError(
+        "The conversion worker was interrupted or exceeded available memory. Try a smaller document.",
+        503,
+      );
     throw new ConversionError(
       "Conversion failed. Check the document or password and try again.",
     );

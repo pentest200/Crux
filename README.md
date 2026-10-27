@@ -120,6 +120,8 @@ PDF compression rasterizes pages, losing searchability, form fields, links, acce
 
 ## Privacy and security
 
+PPTX conversions prepare a temporary copy before launching LibreOffice. Embedded PNG/JPEG/WebP images larger than 4096 pixels on either edge are downsampled proportionally; small images and slide XML are unchanged. This reduces memory spikes from highly compressed, very large images, but can reduce fine image detail in the PDF. The original upload is never overwritten. Image preparation runs in a separate process, with a 100-megapixel input limit, no image cache, and the same overall conversion deadline. It exits before LibreOffice starts. Malformed or animated raster images are rejected; other media formats are not optimized. These bounds reduce memory risk, not a guarantee for every presentation.
+
 - Local tools process file contents in browser memory, without document analytics or automatic upload. Background removal fetches model assets from `staticimgly.com`, but does not send your image there. The interface also loads Google Fonts; local processing does not mean zero network requests or full offline support.
 - Downloads are checked through `/api/auth/download`; server `/convert` routes validate the session before accepting an upload. Client-side download gating is a product workflow, not DRM: users control data already processed in their own browser.
 - Every server conversion requires a visible informed-consent checkbox. The API checks consent before parsing multipart data. A client header is a request contract, not authentication.
@@ -193,7 +195,7 @@ try {
 
 Tests create and drop only randomly named `ghost_auth_test_*` databases. The real account browser test covers signup through the download prompt and `/register`, login via `/login`, hashing, cookie security, reload, logout, revocation, and resumed downloads.
 
-For a native qpdf upload check, use an auth-enabled deployment with qpdf installed and an existing **test** account. Supply `BROWSER_BASE_URL`, `TEST_AUTH_EMAIL`, and `TEST_AUTH_PASSWORD`, then run `npm.cmd run test:e2e -- tests/server-flow.spec.js`. That test requires explicit upload consent and checks a real protected PDF download. Do not use personal credentials or run competing conversions against the single conversion worker. The older `tests/native.test.js` harness does not attach account sessions and is not the authenticated release check.
+For native PPTX/LibreOffice and qpdf upload checks, use an auth-enabled deployment with those engines installed and an existing **test** account. Supply `BROWSER_BASE_URL`, `TEST_AUTH_EMAIL`, and `TEST_AUTH_PASSWORD`, then run `npm.cmd run test:e2e -- tests/server-flow.spec.js`. These tests require explicit upload consent and check real presentation-to-PDF and protected PDF downloads. Do not use personal credentials or run competing conversions against the single conversion worker. The older `tests/native.test.js` harness does not attach account sessions and is not the authenticated release check.
 
 See [docs/security-review.md](docs/security-review.md) for the known transitive dependency advisory. Tests cover generated fixtures and documented limits, not every possible document or a complete security audit.
 
@@ -204,6 +206,7 @@ See [docs/security-review.md](docs/security-review.md) for the known transitive 
 - Login/signup HTTP 403: check `CLIENT_ORIGIN`, the browser's actual origin, and that the API was restarted after configuration changes. Keep production restricted to the real HTTPS frontend, not localhost or a wildcard.
 - HTTP 401 from `/auth/me` while signed out is expected. A 401 from login means credentials were rejected, not a successful login.
 - Accounts unavailable/HTTP 503: enable both MongoDB and auth, configure the URI/signing secret, and verify Atlas network access. `.env` is not automatically uploaded to Render.
+- Conversion HTTP 502/504: the gateway lost the API response or timed out. Wait briefly and explicitly retry; uploads are not automatically replayed. If it repeats, record file size, slide count, failure time, and whether `/api/health` is reachable. Check Render runtime logs/metrics for restarts, memory exhaustion, and timeouts before changing resource limits or blaming the document. A successful small fixture does not prove a large presentation will convert.
 - HTTP 429: wait a minute or retry after the running conversion completes.
 - Invalid Office upload: only DOCX/XLSX/PPTX OOXML files are accepted. Legacy DOC/XLS/PPT, encrypted Office documents, macros, and external links are not supported.
 - Large PDF/image: lower rendering scale, split the document, or use smaller batches. Memory limits are intentionally finite.

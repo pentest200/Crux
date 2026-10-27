@@ -115,6 +115,60 @@ test("expired jobs are removed", async () => {
   await cleanupExpired(Date.now(), 1000);
   assert.ok(!(await readdir(jobRoot)).includes("job-expiry-test"));
 });
+
+test("PPTX media worker finishes before LibreOffice and both stages use the job deadline", async () => {
+  const zip = new JSZip();
+  zip.file("[Content_Types].xml", "<Types/>");
+  zip.file("ppt/presentation.xml", "<presentation/>");
+  const file = {
+    originalname: "deck.pptx",
+    mimetype:
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    buffer: await zip.generateAsync({ type: "nodebuffer" }),
+  };
+  const calls = [];
+  let directory;
+  await convertFile(
+    file,
+    "powerpoint-to-pdf",
+    "",
+    undefined,
+    async (command, args, options) => {
+      directory = options.cwd;
+      calls.push({ command, args, timeout: options.timeout });
+      if (calls.length === 1) {
+        assert.equal(command, process.execPath);
+        assert.ok(args[0].endsWith("pptx-media-worker.js"));
+        await writeFile(args[2], file.buffer);
+      } else {
+        assert.ok(args.at(-1).endsWith("prepared.pptx"));
+        assert.ok(options.timeout <= calls[0].timeout);
+        await writeFile(
+          path.join(directory, "prepared.pdf"),
+          "%PDF-1.7\nconverted",
+        );
+      }
+    },
+  );
+  assert.equal(calls.length, 2);
+  await assert.rejects(access(directory));
+  await assert.rejects(
+    convertFile(file, "powerpoint-to-pdf", "", undefined, async () => {
+      const error = new Error("private image/path details");
+      error.exitCode = 65;
+      throw error;
+    }),
+    (error) => error.status === 422 && !error.message.includes("private"),
+  );
+  await assert.rejects(
+    convertFile(file, "powerpoint-to-pdf", "", undefined, async () => {
+      const error = new Error("killed");
+      error.signal = "SIGKILL";
+      throw error;
+    }),
+    (error) => error.status === 503,
+  );
+});
 test("HTTP health, capability, authentication, path access, and headers", async () => {
   const server = app.listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));
