@@ -130,6 +130,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 
 .modal-backdrop { position: fixed; inset: 0; z-index: 90; overflow: auto; padding: 34px 16px; background: rgba(8,10,8,.84); backdrop-filter: blur(10px); }
 .workspace { width: min(980px, 100%); margin: 0 auto; padding: 27px; border: 1px solid #4a5246; border-radius: 2px; background: #141714; box-shadow: 0 30px 100px rgba(0,0,0,.55); outline: none; }
+.tool-page { padding-top: 32px; padding-bottom: 48px; }
+.tool-page .workspace { width: 100%; box-shadow: none; }
+.workspace-head h1 { margin: 11px 0 0; font-size: clamp(30px, 5vw, 56px); letter-spacing: -.08em; overflow-wrap: anywhere; }
 .back { display: inline-flex; align-items: center; gap: 7px; padding: 0; border: 0; background: transparent; color: var(--muted); font: 11px "DM Mono", monospace; }
 .back:hover { color: var(--lime); }
 .workspace-head { display: flex; justify-content: space-between; align-items: start; margin: 25px 0 28px; }
@@ -156,6 +159,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 /* auth */
 .auth-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(8,10,8,.82); backdrop-filter: blur(12px); }
 .auth-modal { position: relative; width: min(440px, 100%); padding: 30px; border: 1px solid #4a5246; border-radius: 2px; background: #171a17; color: var(--ink); box-shadow: 0 30px 90px rgba(0,0,0,.6); }
+.auth-modal::backdrop { background: rgba(8,10,8,.82); backdrop-filter: blur(12px); }
 .auth-close { position: absolute; top: 16px; right: 16px; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 2px; background: transparent; color: var(--muted); }
 .auth-close:hover { color: var(--lime); border-color: var(--lime); }
 .auth-header { margin-bottom: 21px; }

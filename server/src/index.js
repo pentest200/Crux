@@ -8,6 +8,8 @@ import { capabilitiesRouter } from "./routes/capabilities.js";
 import { officeRouter } from "./routes/office.js";
 import { pathToFileURL } from "node:url";
 import { cleanupExpired } from "./conversion.js";
+import { createAuthRouter, User, AuthSession } from "./auth.js";
+import { resolveMongoUri } from "./database.js";
 const app = express();
 app.disable("x-powered-by");
 app.use(helmet());
@@ -36,6 +38,7 @@ app.get("/health", (_request, response) =>
   response.json({ ok: true, service: "ghost-files-api" }),
 );
 app.use("/capabilities", capabilitiesRouter);
+app.use("/auth", createAuthRouter(config));
 app.use("/convert", officeRouter);
 app.use((_request, response) =>
   response.status(404).json({ error: "Not found." }),
@@ -52,8 +55,18 @@ app.use((error, _request, response, _next) => {
     .json({ error: error.status ? error.message : "Unexpected server error." });
 });
 async function start() {
-  if (config.MONGODB_ENABLED === "true")
-    await mongoose.connect(config.MONGODB_URI);
+  if (config.MONGODB_ENABLED === "true") {
+    const uri = await resolveMongoUri(
+      config.MONGODB_URI,
+      config.MONGODB_DNS_SERVERS,
+    );
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+    });
+    if (config.AUTH_ENABLED === "true")
+      await Promise.all([User.init(), AuthSession.init()]);
+  }
   await cleanupExpired();
   const timer = setInterval(() => cleanupExpired().catch(() => {}), 60000);
   timer.unref();

@@ -44,7 +44,8 @@ function Field({ label, children }) {
     </label>
   );
 }
-export default function Workspace({ tool, onClose, user, onRequireAuth }) {
+export default function Workspace({ tool, onClose, presentation = "dialog" }) {
+  const isPage = presentation === "page";
   const [files, setFiles] = useState([]),
     [options, setOptions] = useState(defaults),
     [results, setResults] = useState([]),
@@ -68,12 +69,6 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
   const [videoProgress, setVideoProgress] = useState(0);
 
   const handleDownload = (downloadAction) => {
-    if (!user) {
-      if (onRequireAuth) {
-        onRequireAuth(downloadAction);
-      }
-      return;
-    }
     downloadAction();
   };
   const [consent, setConsent] = useState(false),
@@ -102,14 +97,14 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
     const previous = document.activeElement;
     modal.current.focus();
     const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    if (!isPage) document.body.style.overflow = "hidden";
     return () => {
       mounted.current = false;
       controller.current?.abort();
-      document.body.style.overflow = overflow;
+      if (!isPage) document.body.style.overflow = overflow;
       previous?.focus();
     };
-  }, []);
+  }, [isPage]);
   useEffect(() => {
     if (!files[0] || !imageInput) {
       setPreview(null);
@@ -288,6 +283,7 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
     onClose();
   }
   function keydown(event) {
+    if (isPage) return;
     if (event.key === "Escape") close();
     if (event.key === "Tab") {
       const controls = [
@@ -541,7 +537,7 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
   const marking = ["edit", "sign", "watermark"].includes(tool.id);
   return (
     <motion.div
-      className="modal-backdrop"
+      className={isPage ? "tool-page shell" : "modal-backdrop"}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -549,8 +545,8 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
     >
       <motion.section
         className="workspace"
-        role="dialog"
-        aria-modal="true"
+        role={isPage ? "region" : "dialog"}
+        aria-modal={isPage ? undefined : "true"}
         aria-labelledby="tool-title"
         tabIndex="-1"
         ref={modal}
@@ -570,7 +566,7 @@ export default function Workspace({ tool, onClose, user, onRequireAuth }) {
                 ? "Temporary server processing"
                 : "Processed on your device"}
             </div>
-            <h2 id="tool-title">{tool.name}</h2>
+            {isPage ? <h1 id="tool-title">{tool.name}</h1> : <h2 id="tool-title">{tool.name}</h2>}
             <p>{tool.description}</p>
           </div>
         </div>

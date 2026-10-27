@@ -19,7 +19,7 @@ const image = Buffer.from(
 async function choose(page, title, files) {
   await page.goto("/");
   await page
-    .getByRole("button", { name: title, exact: false })
+    .locator(".tool-card")
     .filter({ has: page.locator("strong", { hasText: title }) })
     .click();
   await page.locator("input[type=file]").first().setInputFiles(files);
@@ -43,6 +43,10 @@ async function downloaded(page, index = 0) {
 }
 
 test("merge real files without any network upload", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("ghost-files-auth-user", JSON.stringify({ email: "retired@example.test" }));
+    localStorage.setItem("ghost-files-auth-token", "ghost_token_demo");
+  });
   const uploads = [];
   page.on("request", (request) => {
     if (request.method() === "POST") uploads.push(request.url());
@@ -51,6 +55,12 @@ test("merge real files without any network upload", async ({ page }) => {
     { name: "a.pdf", mimeType: "application/pdf", buffer: await pdf(300) },
     { name: "b.pdf", mimeType: "application/pdf", buffer: await pdf(400) },
   ]);
+  await expect(page.getByText("No account required", { exact: true })).toBeVisible();
+  await expect(page.locator('input[type="email"], input[type="password"]')).toHaveCount(0);
+  expect(await page.evaluate(() => [
+    localStorage.getItem("ghost-files-auth-user"),
+    localStorage.getItem("ghost-files-auth-token"),
+  ])).toEqual([null, null]);
   await expect(page.locator(".file-row")).toHaveCount(2);
   await process(page);
   const doc = await PDFDocument.load(await downloaded(page));

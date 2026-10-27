@@ -162,9 +162,17 @@ const definitions = [
     "🎵",
   ],
 ];
+const routeNames = {
+  convert: "image-converter", "bg-remove": "background-remover",
+  resize: "image-resizer", compress: "image-compressor",
+  merge: "merge-pdf", split: "split-pdf", edit: "edit-pdf", sign: "sign-pdf",
+  watermark: "watermark-pdf", rotate: "rotate-pdf", unlock: "unlock-pdf",
+  protect: "protect-pdf", organize: "organize-pdf",
+};
 export const tools = definitions.map(
   ([id, name, description, mode, icon], index) => ({
     id,
+    path: `/tools/${routeNames[id] || id}`,
     name,
     description,
     mode,

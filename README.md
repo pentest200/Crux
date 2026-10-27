@@ -28,6 +28,14 @@ Frontend: http://localhost:5173. API: http://localhost:8787/health. Vite proxies
 
 ## Tools and limits
 
+All 24 tools have independent pages under `/tools/`, for example
+`/tools/image-converter`, `/tools/background-remover`, `/tools/merge-pdf`,
+`/tools/word-to-pdf`, and `/tools/video-to-audio`. Tool cards link to these pages;
+direct visits, refresh, and browser Back/Forward work. The complete route list
+is defined in `client/src/lib/catalog.js`. Nginx's existing SPA fallback serves
+direct tool URLs. Files remain in memory and must be selected again after refresh.
+
+
 | Tool              | Implementation / relevant limit                                                                         |
 | ----------------- | ------------------------------------------------------------------------------------------------------- |
 | Merge PDF         | Copies PDF pages in displayed file order; accessible file move buttons                                  |
@@ -96,7 +104,7 @@ Native integration tests require the running Docker deployment on port 4180 and 
 
 To run the browser suite against the complete Docker deployment, including a real consent-approved password upload, set `$env:BROWSER_BASE_URL='http://127.0.0.1:4180'` before `npm.cmd run test:e2e`. Run native and browser suites sequentially because they share the single conversion worker.
 
-Verified on this workspace: 18 Node tests, 12 production browser tests, and 2 native integration tests passed; the production build and Docker deployment succeeded; npm audit reported zero vulnerabilities. Temporary job directories were empty after the successful and failed password conversions. These results cover the generated fixtures and documented limits, not every possible document.
+Latest release checks: 23 Node tests (including isolated MongoDB authentication), 16 browser tests, the production build, and the current Render Blueprint JSON Schema passed. These checks cover signup/login/logout, all 24 tool routes, navigation, and representative file outputs. See `docs/security-review.md` for the remaining transitive dependency advisory. These results cover generated fixtures and documented limits, not every possible document.
 
 ## Troubleshooting
 
